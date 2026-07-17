@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    @apply bg-white text-slate-900;
+    font-family: "Inter", system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .transition-smooth {
+    transition: all 0.2s ease;
+  }
+}
