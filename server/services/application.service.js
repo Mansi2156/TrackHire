@@ -44,8 +44,38 @@ function applyWorkModeRules(data, existingWorkMode) {
   return data;
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// A user shouldn't end up with two application records for the same
+// role at the same company. Compared case-insensitively so "Google" and
+// "google" are treated as the same duplicate.
+async function assertNoDuplicateApplication(userId, company, jobTitle, excludeId) {
+  const filter = {
+    userId,
+    company: new RegExp(`^${escapeRegExp(company)}$`, "i"),
+    jobTitle: new RegExp(`^${escapeRegExp(jobTitle)}$`, "i"),
+  };
+  if (excludeId) {
+    filter._id = { $ne: excludeId };
+  }
+  const existing = await JobApplication.findOne(filter);
+  if (existing) {
+    throw new ApiError(
+      409,
+      "You already have an application for this role at this company"
+    );
+  }
+}
+
 async function createApplication(userId, payload) {
   const data = applyWorkModeRules(pickWritableFields(payload));
+  if (data.status === "Saved") {
+    data.appliedDate = null;
+    data.interviewDate = null;
+  }
+  await assertNoDuplicateApplication(userId, data.company, data.jobTitle);
   const application = await JobApplication.create({ ...data, userId });
   return application;
 }
@@ -117,6 +147,13 @@ async function getOwnedApplication(userId, id) {
 async function updateApplication(userId, id, payload) {
   const application = await getOwnedApplication(userId, id);
   const data = applyWorkModeRules(pickWritableFields(payload), application.workMode);
+  if (data.status === "Saved") {
+    data.appliedDate = null;
+    data.interviewDate = null;
+  }
+  const nextCompany = data.company !== undefined ? data.company : application.company;
+  const nextJobTitle = data.jobTitle !== undefined ? data.jobTitle : application.jobTitle;
+  await assertNoDuplicateApplication(userId, nextCompany, nextJobTitle, id);
   Object.assign(application, data);
   await application.save();
   return application;

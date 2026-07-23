@@ -1,4 +1,4 @@
-const { body, param, query } = require("express-validator");
+const { body, param, query, checkExact } = require("express-validator");
 const {
   STATUSES,
   JOB_TYPES,
@@ -45,20 +45,49 @@ const baseFieldValidators = [
     .optional({ checkFalsy: true })
     .isIn(JOB_TYPES)
     .withMessage(`Employment type must be one of: ${JOB_TYPES.join(", ")}`),
-  body("deadline")
-    .optional({ checkFalsy: true, nullable: true })
-    .isISO8601()
-    .withMessage("Deadline must be a valid date"),
   body("salaryRange").optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+  // appliedDate must be validated before deadline below, since deadline's
+  // cross-field check reads the already-sanitized req.body.appliedDate.
   body("appliedDate")
     .notEmpty()
     .withMessage("Application date is required")
     .isISO8601()
-    .withMessage("Application date must be a valid date"),
+    .withMessage("Application date must be a valid date")
+    .custom((value) => {
+      if (new Date(value) > new Date()) {
+        throw new Error("Application date cannot be in the future");
+      }
+      return true;
+    }),
   body("interviewDate")
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601()
+    .withMessage("Interview date must be a valid date")
+    .custom((value, { req }) => {
+      if (!value || req.body.status === "Saved") return true;
+
+      if (
+        req.body.appliedDate &&
+        new Date(value) < new Date(req.body.appliedDate)
+      ) {
+        throw new Error(
+          "Interview date cannot be before the application date"
+        );
+      }
+
+      return true;
+    }),
+  body("deadline")
     .optional({ checkFalsy: true, nullable: true })
     .isISO8601()
-    .withMessage("Interview date must be a valid date"),
+    .withMessage("Deadline must be a valid date")
+    .custom((value, { req }) => {
+      if (!req.body.appliedDate) return true;
+      if (new Date(value) < new Date(req.body.appliedDate)) {
+        throw new Error("Application deadline cannot be before the application date");
+      }
+      return true;
+    }),
   body("recruiterName").optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
   body("recruiterEmail")
     .optional({ checkFalsy: true })
@@ -70,14 +99,35 @@ const baseFieldValidators = [
   body("applicationUrl")
     .optional({ checkFalsy: true })
     .trim()
-    .isURL({ require_protocol: true })
-    .withMessage("Application URL must be a valid URL (including https://)"),
+    .isURL({ protocols: ["http", "https"], require_protocol: true })
+    .withMessage("Application URL must be a valid http:// or https:// URL"),
   body("resumeVersion").optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
   body("status")
     .optional({ checkFalsy: true })
     .isIn(STATUSES)
     .withMessage(`Status must be one of: ${STATUSES.join(", ")}`),
-  body("notes").optional({ checkFalsy: true }).trim().isLength({ max: 5000 }),
+  body().custom((_, { req }) => {
+    if (req.body.status === "Saved") {
+      if (req.body.appliedDate) {
+        throw new Error(
+          "Saved applications cannot have an application date"
+        );
+      }
+
+      if (req.body.interviewDate) {
+        throw new Error(
+          "Saved applications cannot have an interview date"
+        );
+      }
+    }
+
+    return true;
+  }),
+  body("notes").optional({ checkFalsy: true }).trim().isLength({ max: 2000 }).withMessage("Notes cannot exceed 2000 characters"),
+  // Whitelist enforcement: rejects any field not covered above — including
+  // non-editable fields like userId/createdAt/updatedAt/_id/archived (archiving
+  // has its own dedicated endpoint) — instead of silently dropping them.
+  checkExact(),
 ];
 
 // Create requires the same fields as update; kept as a distinct export so
@@ -93,6 +143,7 @@ const updateStatusValidator = [
     .withMessage("Status is required")
     .isIn(STATUSES)
     .withMessage(`Status must be one of: ${STATUSES.join(", ")}`),
+  checkExact(),
 ];
 
 const archiveValidator = [
@@ -103,6 +154,7 @@ const archiveValidator = [
     .isBoolean()
     .withMessage("archived must be true or false")
     .toBoolean(),
+  checkExact(),
 ];
 
 const listQueryValidator = [
@@ -122,8 +174,16 @@ const listQueryValidator = [
     .optional({ checkFalsy: true })
     .isIn(SORT_OPTIONS)
     .withMessage(`sortBy must be one of: ${SORT_OPTIONS.join(", ")}`),
-  query("page").optional({ checkFalsy: true }).isInt({ min: 1 }).toInt(),
-  query("limit").optional({ checkFalsy: true }).isInt({ min: 1, max: 100 }).toInt(),
+  query("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("page must be an integer of at least 1")
+    .toInt(),
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("limit must be an integer between 1 and 100")
+    .toInt(),
 ];
 
 module.exports = {

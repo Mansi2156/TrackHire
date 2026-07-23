@@ -62,8 +62,10 @@ const jobApplicationSchema = new mongoose.Schema(
     },
     appliedDate: {
       type: Date,
-      required: [true, "Application date is required"],
-      default: Date.now,
+      required: function () {
+        return this.status !== "Saved";
+      },
+      default: null,
     },
     interviewDate: {
       type: Date,
@@ -115,7 +117,7 @@ const jobApplicationSchema = new mongoose.Schema(
     notes: {
       type: String,
       trim: true,
-      maxlength: [5000, "Notes cannot exceed 5000 characters"],
+      maxlength: [2000, "Notes cannot exceed 2000 characters"],
       default: "",
     },
     // Required for Phase 2's archive functionality. Not listed as a column
@@ -136,5 +138,8 @@ jobApplicationSchema.index({ userId: 1, archived: 1, createdAt: -1 });
 // Case-insensitive search by company/role.
 jobApplicationSchema.index({ userId: 1, company: 1 });
 jobApplicationSchema.index({ userId: 1, jobTitle: 1 });
+// Supports the duplicate-application check (same user + company + jobTitle)
+// performed on create/update.
+jobApplicationSchema.index({ userId: 1, company: 1, jobTitle: 1 });
 
 module.exports = mongoose.model("JobApplication", jobApplicationSchema);

@@ -1,4 +1,5 @@
 import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 import { HiX } from "react-icons/hi";
 import TextField from "./TextField";
 import TextAreaField from "./TextAreaField";
@@ -32,6 +33,30 @@ const EMPTY_DEFAULTS = {
   notes: "",
 };
 
+// Keys the form actually owns. Used to whitelist incoming defaultValues so
+// non-editable fields from the fetched document (_id, userId, createdAt,
+// updatedAt, __v, archived) never enter react-hook-form's internal state —
+// otherwise they'd ride along in the submitted payload even though no
+// input ever renders them.
+const EDITABLE_FIELDS = Object.keys(EMPTY_DEFAULTS);
+
+function pickEditableFields(source) {
+  if (!source) return {};
+  const picked = {};
+  for (const field of EDITABLE_FIELDS) {
+    if (source[field] !== undefined) picked[field] = source[field];
+  }
+  return picked;
+}
+
+function trimStrings(obj) {
+  const result = {};
+  for (const [key, value] of Object.entries(obj)) {
+    result[key] = typeof value === "string" ? value.trim() : value;
+  }
+  return result;
+}
+
 export default function ApplicationForm({
   defaultValues,
   onSubmit,
@@ -48,7 +73,7 @@ export default function ApplicationForm({
   } = useForm({
     defaultValues: {
       ...EMPTY_DEFAULTS,
-      ...defaultValues,
+      ...pickEditableFields(defaultValues),
       appliedDate: toDateInputValue(defaultValues?.appliedDate || new Date()),
       interviewDate: toDateInputValue(defaultValues?.interviewDate),
       deadline: toDateInputValue(defaultValues?.deadline),
@@ -57,14 +82,25 @@ export default function ApplicationForm({
 
   const status = watch("status");
   const workMode = watch("workMode");
+  const appliedDate = watch("appliedDate");
+  const isSaved = status === "Saved";
   const isRemote = workMode === "Remote";
 
+  useEffect(() => {
+    if (isSaved) {
+      setValue("appliedDate", "");
+      setValue("interviewDate", "");
+    }
+  }, [isSaved, setValue]);
+
   const submit = (data) => {
+    const trimmed = trimStrings(data);
     // Empty interview/deadline dates should clear the field rather than send "".
     const payload = {
-      ...data,
-      interviewDate: data.interviewDate || null,
-      deadline: data.deadline || null,
+      ...trimmed,
+      appliedDate: isSaved ? null : trimmed.appliedDate,
+      interviewDate: isSaved ? null : trimmed.interviewDate || null,
+      deadline: trimmed.deadline || null,
     };
     // Remote roles have no physical location — don't send/store one, even
     // if a value is left over from switching work modes.
@@ -77,28 +113,31 @@ export default function ApplicationForm({
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-6">
       {/* Company + Role */}
-      <div className="grid grid-cols-2 gap-6">
-        <TextField
-          id="company"
-          label="Company Name *"
-          placeholder="e.g. Google"
-          error={errors.company?.message}
-          {...register("company", {
-            required: "Company name is required",
-            maxLength: { value: 200, message: "Company name is too long" },
-          })}
-        />
-        <TextField
-          id="jobTitle"
-          label="Role / Job Title *"
-          placeholder="e.g. Senior Frontend Engineer"
-          error={errors.jobTitle?.message}
-          {...register("jobTitle", {
-            required: "Role / job title is required",
-            maxLength: { value: 200, message: "Job title is too long" },
-          })}
-        />
-      </div>
+        <div className="grid grid-cols-2 gap-6">
+          <TextField
+            id="company"
+            label="Company Name *"
+            placeholder="e.g. Google"
+            error={errors.company?.message}
+            {...register("company", {
+              required: "Company name is required",
+              validate: (value) => value.trim().length > 0 || "Company name is required",
+              maxLength: { value: 200, message: "Company name is too long" },
+            })}
+          />
+          <TextField
+            id="jobTitle"
+            label="Role / Job Title *"
+            placeholder="e.g. Senior Frontend Engineer"
+            error={errors.jobTitle?.message}
+            {...register("jobTitle", {
+              required: "Role / job title is required",
+              validate: (value) => value.trim().length > 0 || "Role / job title is required",
+              maxLength: { value: 200, message: "Job title is too long" },
+            })}
+          />
+        </div>
+      
 
       {/* Work Mode + Location (Location only applies to On-site/Hybrid) */}
       <div className={`grid gap-6 ${isRemote ? "grid-cols-1" : "grid-cols-2"}`}>
@@ -117,6 +156,9 @@ export default function ApplicationForm({
             error={errors.location?.message}
             {...register("location", {
               required: "Location is required for On-site or Hybrid work mode",
+              validate: (value) =>
+                (value && value.trim().length > 0) ||
+                "Location is required for On-site or Hybrid work mode",
               maxLength: { value: 200, message: "Location is too long" },
             })}
           />
@@ -141,19 +183,65 @@ export default function ApplicationForm({
       </div>
 
       {/* Dates */}
+      {!isSaved && (
       <div className="grid grid-cols-2 gap-6">
         <TextField
           id="appliedDate"
           label="Application Date *"
           type="date"
           error={errors.appliedDate?.message}
-          {...register("appliedDate", { required: "Application date is required" })}
+          {...register("appliedDate", {
+            validate: (value) => {
+              if (isSaved) return true;
+
+              if (!value) {
+                return "Application date is required";
+              }
+
+              if (new Date(value) > new Date()) {
+                return "Application date cannot be in the future";
+              }
+
+              return true;
+            }
+          })}
         />
-        <TextField id="interviewDate" label="Interview Date" type="date" {...register("interviewDate")} />
+        <TextField
+          id="interviewDate"
+          label="Interview Date"
+          type="date"
+          error={errors.interviewDate?.message}
+          {...register("interviewDate", {
+            validate: (value) => {
+              if (isSaved || !value) return true;
+
+              return (
+                new Date(value) >= new Date(appliedDate) ||
+                "Interview date cannot be before the application date"
+              );
+            },
+          })}
+        />
       </div>
+    )}
 
       {/* Deadline */}
-      <TextField id="deadline" label="Application Deadline" type="date" {...register("deadline")} />
+      <TextField
+        id="deadline"
+        label="Application Deadline"
+        type="date"
+        error={errors.deadline?.message}
+        {...register("deadline", {
+          validate: (value) => {
+            if (isSaved || !value) return true;
+
+            return (
+              new Date(value) >= new Date(appliedDate) ||
+              "Deadline cannot be before the application date"
+            );
+          }
+        })}
+      />
 
       {/* Recruiter */}
       <div className="grid grid-cols-2 gap-6">
@@ -194,7 +282,7 @@ export default function ApplicationForm({
         {...register("applicationUrl", {
           pattern: {
             value: /^https?:\/\/.+/i,
-            message: "Include https:// at the start of the URL",
+            message: "Enter a valid URL starting with http:// or https://",
           },
         })}
       />
@@ -234,7 +322,12 @@ export default function ApplicationForm({
         label="Notes"
         placeholder="Any notes, referrals, or reminders..."
         rows={3}
-        {...register("notes")}
+        {...register("notes", {
+          maxLength: {
+            value: 2000,
+            message: "Notes cannot exceed 2000 characters",
+          },
+        })}
       />
 
       {/* Buttons */}
