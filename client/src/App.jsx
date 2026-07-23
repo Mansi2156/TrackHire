@@ -7,6 +7,10 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Applications from "./pages/Applications";
+import AddApplication from "./pages/AddApplication";
+import EditApplication from "./pages/EditApplication";
+import ApplicationDetails from "./pages/ApplicationDetails";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -24,6 +28,10 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/applications" element={<Applications />} />
+            <Route path="/applications/new" element={<AddApplication />} />
+            <Route path="/applications/:id" element={<ApplicationDetails />} />
+            <Route path="/applications/:id/edit" element={<EditApplication />} />
           </Route>
         </Route>
 

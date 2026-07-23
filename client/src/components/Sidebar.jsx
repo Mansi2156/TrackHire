@@ -17,7 +17,7 @@ import { useAuth } from "../hooks/useAuth";
 // the Figma design but are disabled until their module is implemented.
 const NAV_ITEMS = [
   { label: "Dashboard", icon: HiOutlineViewGrid, to: "/dashboard", enabled: true },
-  { label: "Applications", icon: HiOutlineBriefcase, enabled: false },
+  { label: "Applications", icon: HiOutlineBriefcase, to: "/applications", enabled: true },
   { label: "Calendar", icon: HiOutlineCalendar, enabled: false },
   { label: "Analytics", icon: HiOutlineChartBar, enabled: false },
   { label: "Resumes", icon: HiOutlineDocumentText, enabled: false },

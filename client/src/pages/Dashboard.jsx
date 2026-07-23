@@ -1,4 +1,5 @@
-import { HiOutlineBriefcase, HiOutlineSparkles } from "react-icons/hi";
+import { Link } from "react-router-dom";
+import { HiOutlineBriefcase, HiOutlinePlus, HiOutlineSparkles } from "react-icons/hi";
 import { useAuth } from "../hooks/useAuth";
 
 function getGreeting() {
@@ -19,8 +20,9 @@ export default function Dashboard() {
           {getGreeting()}, {firstName} 👋
         </h1>
         <p className="mt-1 text-slate-500">
-          You&apos;re signed in and ready to go. Application tracking, interviews,
-          and analytics are coming in the next phases.
+          You&apos;re signed in and ready to go. Stats and analytics are
+          coming in a later phase — for now, head to Applications to start
+          tracking your job search.
         </p>
       </header>
 
@@ -32,9 +34,16 @@ export default function Dashboard() {
           Your application tracker starts here
         </h2>
         <p className="mx-auto mt-1.5 max-w-sm text-sm text-slate-500">
-          Authentication is set up. The next build phase adds job application
-          tracking, the pipeline view, and search &amp; filters.
+          Add, edit, and track every job application through its pipeline —
+          from Applied all the way to Accepted.
         </p>
+        <Link
+          to="/applications/new"
+          className="mx-auto mt-5 flex h-10 w-fit items-center gap-2 rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white transition-smooth hover:bg-brand-700"
+        >
+          <HiOutlinePlus className="h-4 w-4" />
+          Add Application
+        </Link>
       </div>
 
       <div className="mt-4 flex items-center gap-2 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700">
