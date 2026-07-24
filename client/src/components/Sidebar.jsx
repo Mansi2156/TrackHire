@@ -12,15 +12,15 @@ import {
 } from "react-icons/hi";
 import { useAuth } from "../hooks/useAuth";
 
-// Nav items beyond Dashboard belong to future phases (Applications, Calendar,
-// Analytics, Resumes, Settings). They're shown as part of the app shell per
-// the Figma design but are disabled until their module is implemented.
+// Calendar, Analytics, AI Assistant, and Settings belong to future phases.
+// They're shown as part of the app shell per the Figma design but stay
+// disabled until their module is implemented.
 const NAV_ITEMS = [
   { label: "Dashboard", icon: HiOutlineViewGrid, to: "/dashboard", enabled: true },
   { label: "Applications", icon: HiOutlineBriefcase, to: "/applications", enabled: true },
   { label: "Calendar", icon: HiOutlineCalendar, enabled: false },
   { label: "Analytics", icon: HiOutlineChartBar, enabled: false },
-  { label: "Resumes", icon: HiOutlineDocumentText, enabled: false },
+  { label: "Resumes", icon: HiOutlineDocumentText, to: "/resumes", enabled: true },
   { label: "AI Assistant", icon: HiOutlineSparkles, enabled: false, badge: "PRO" },
   { label: "Settings", icon: HiOutlineCog, enabled: false },
 ];

@@ -11,6 +11,7 @@ import Applications from "./pages/Applications";
 import AddApplication from "./pages/AddApplication";
 import EditApplication from "./pages/EditApplication";
 import ApplicationDetails from "./pages/ApplicationDetails";
+import ResumeManager from "./pages/ResumeManager";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/applications/new" element={<AddApplication />} />
             <Route path="/applications/:id" element={<ApplicationDetails />} />
             <Route path="/applications/:id/edit" element={<EditApplication />} />
+            <Route path="/resumes" element={<ResumeManager />} />
           </Route>
         </Route>
 

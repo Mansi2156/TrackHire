@@ -57,3 +57,10 @@ export const STATUS_STYLES = {
   Withdrawn: "bg-slate-100 text-slate-500 border border-slate-200",
   Closed: "bg-neutral-100 text-neutral-600 border border-neutral-300",
 };
+
+// Mirrors server/constants/resume.constants.js — kept in one place so the
+// upload dropzone and the edit/replace file picker enforce identical
+// client-side rules before ever hitting the API.
+export const RESUME_ACCEPTED_EXTENSIONS = [".pdf", ".docx"];
+
+export const RESUME_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
