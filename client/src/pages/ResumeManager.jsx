@@ -185,6 +185,7 @@ export default function ResumeManager() {
               onDownload={handleDownload}
               onDelete={handleDelete}
               onSetDefault={handleSetDefault}
+              isSettingDefault={setDefaultMutation.isPending}
             />
           ))}
         </div>

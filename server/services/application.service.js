@@ -1,4 +1,5 @@
 const JobApplication = require("../models/JobApplication.model");
+const Resume = require("../models/Resume.model");
 const ApiError = require("../utils/ApiError");
 
 // Fields a client is allowed to set. Deliberately excludes userId/archived —
@@ -18,7 +19,7 @@ const WRITABLE_FIELDS = [
   "recruiterEmail",
   "jobDescription",
   "applicationUrl",
-  "resumeVersion",
+  "resumeId",
   "status",
   "notes",
 ];
@@ -44,8 +45,52 @@ function applyWorkModeRules(data, existingWorkMode) {
   return data;
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// A client could otherwise reference another user's resume by guessing/
+// enumerating an id. Every create/update re-verifies ownership rather than
+// trusting whatever id was sent, per IMPLEMENTATION_RULES.md §6/§7 ("never
+// trust client-provided ownership fields", "ensure users can access only
+// their own resources").
+async function assertResumeOwnership(userId, resumeId) {
+  if (!resumeId) return;
+  const resume = await Resume.findOne({ _id: resumeId, userId }).select("_id");
+  if (!resume) {
+    throw new ApiError(400, "Selected resume was not found");
+  }
+}
+
+// A user shouldn't end up with two application records for the same
+// role at the same company. Compared case-insensitively so "Google" and
+// "google" are treated as the same duplicate.
+async function assertNoDuplicateApplication(userId, company, jobTitle, excludeId) {
+  const filter = {
+    userId,
+    company: new RegExp(`^${escapeRegExp(company)}$`, "i"),
+    jobTitle: new RegExp(`^${escapeRegExp(jobTitle)}$`, "i"),
+  };
+  if (excludeId) {
+    filter._id = { $ne: excludeId };
+  }
+  const existing = await JobApplication.findOne(filter);
+  if (existing) {
+    throw new ApiError(
+      409,
+      "You already have an application for this role at this company"
+    );
+  }
+}
+
 async function createApplication(userId, payload) {
   const data = applyWorkModeRules(pickWritableFields(payload));
+  await assertResumeOwnership(userId, data.resumeId);
+  if (data.status === "Saved") {
+    data.appliedDate = null;
+    data.interviewDate = null;
+  }
+  await assertNoDuplicateApplication(userId, data.company, data.jobTitle);
   const application = await JobApplication.create({ ...data, userId });
   return application;
 }
@@ -117,6 +162,14 @@ async function getOwnedApplication(userId, id) {
 async function updateApplication(userId, id, payload) {
   const application = await getOwnedApplication(userId, id);
   const data = applyWorkModeRules(pickWritableFields(payload), application.workMode);
+  await assertResumeOwnership(userId, data.resumeId);
+  if (data.status === "Saved") {
+    data.appliedDate = null;
+    data.interviewDate = null;
+  }
+  const nextCompany = data.company !== undefined ? data.company : application.company;
+  const nextJobTitle = data.jobTitle !== undefined ? data.jobTitle : application.jobTitle;
+  await assertNoDuplicateApplication(userId, nextCompany, nextJobTitle, id);
   Object.assign(application, data);
   await application.save();
   return application;
@@ -140,6 +193,10 @@ async function setArchived(userId, id, archived) {
 async function updateStatus(userId, id, status) {
   const application = await getOwnedApplication(userId, id);
   application.status = status;
+  if (status === "Saved") {
+    application.appliedDate = null;
+    application.interviewDate = null;
+  }
   await application.save();
   return application;
 }

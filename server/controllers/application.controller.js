@@ -23,6 +23,11 @@ const listApplications = asyncHandler(async (req, res) => {
 // GET /api/applications/:id
 const getApplication = asyncHandler(async (req, res) => {
   const application = await applicationService.getOwnedApplication(req.user._id, req.params.id);
+  // Populated only for this read-facing response; update/archive/status
+  // continue to work with the raw ObjectId via the (unpopulated) service
+  // layer so re-saving the document never risks writing back a populated
+  // sub-document instead of a plain id.
+  await application.populate("resumeId", "title version isDefault");
   res.status(200).json({ success: true, application });
 });
 

@@ -62,11 +62,16 @@ const jobApplicationSchema = new mongoose.Schema(
     },
     appliedDate: {
       type: Date,
-      required: [true, "Application date is required"],
-      default: Date.now,
+      required: function () {
+        return this.status !== "Saved";
+      },
+      default: null,
     },
     interviewDate: {
       type: Date,
+      required: function () {
+        return this.status === "Interview";
+      },
       default: null,
     },
     deadline: {
@@ -97,14 +102,13 @@ const jobApplicationSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-    // Resume Manager (Phase 3) will introduce a Resume model with a
-    // resumeId reference. Until then the resume version is stored as
-    // plain text, mirroring the `company` field decision above.
-    resumeVersion: {
-      type: String,
-      trim: true,
-      maxlength: [100, "Resume version cannot exceed 100 characters"],
-      default: "",
+    // Resume Manager (Phase 3) now exists, so applications reference an
+    // uploaded Resume directly instead of storing a free-text version
+    // label. Optional: an application can exist with no resume attached.
+    resumeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Resume",
+      default: null,
     },
     status: {
       type: String,
@@ -115,7 +119,7 @@ const jobApplicationSchema = new mongoose.Schema(
     notes: {
       type: String,
       trim: true,
-      maxlength: [5000, "Notes cannot exceed 5000 characters"],
+      maxlength: [2000, "Notes cannot exceed 2000 characters"],
       default: "",
     },
     // Required for Phase 2's archive functionality. Not listed as a column
@@ -136,5 +140,8 @@ jobApplicationSchema.index({ userId: 1, archived: 1, createdAt: -1 });
 // Case-insensitive search by company/role.
 jobApplicationSchema.index({ userId: 1, company: 1 });
 jobApplicationSchema.index({ userId: 1, jobTitle: 1 });
+// Supports the duplicate-application check (same user + company + jobTitle)
+// performed on create/update.
+jobApplicationSchema.index({ userId: 1, company: 1, jobTitle: 1 });
 
 module.exports = mongoose.model("JobApplication", jobApplicationSchema);

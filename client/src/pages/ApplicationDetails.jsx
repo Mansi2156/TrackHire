@@ -81,7 +81,10 @@ export default function ApplicationDetails() {
   };
 
   const details = [
-    app.resumeVersion && { label: "Resume Used", value: app.resumeVersion },
+    app.resumeId && {
+      label: "Resume Used",
+      value: app.resumeId.version ? `${app.resumeId.title} (${app.resumeId.version})` : app.resumeId.title,
+    },
     app.jobType && { label: "Employment", value: app.jobType },
     app.salaryRange && { label: "Salary", value: app.salaryRange },
     app.location && { label: "Location", value: app.location },

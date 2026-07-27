@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   HiOutlineDownload,
   HiOutlinePencilAlt,
@@ -8,6 +8,10 @@ import {
   HiStar,
   HiOutlineStar,
 } from "react-icons/hi";
+// Overflow menu is intentionally minimal: "Set as Default" and "Delete" are
+// the only actions that don't already have a dedicated control elsewhere on
+// the card (Preview lives on the thumbnail, Download/Rename-Replace live in
+// the card footer via onDownload/onEdit).
 import { getResumeColor } from "../utils/resumeColors";
 import { formatFileSize } from "../utils/formatBytes";
 
@@ -18,10 +22,42 @@ function formatShortDate(value) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function ResumeCard({ resume, onPreview, onEdit, onDownload, onDelete, onSetDefault }) {
+export default function ResumeCard({
+  resume,
+  onPreview,
+  onEdit,
+  onDownload,
+  onDelete,
+  onSetDefault,
+  isSettingDefault = false,
+}) {
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
   const color = getResumeColor(resume._id);
   const extension = resume.mimeType?.includes("pdf") ? "PDF" : "DOCX";
+
+  // Closing on outside click / Escape is standard menu behavior the rest of
+  // the app already gets "for free" from native <select>s — a custom
+  // dropdown needs to implement it explicitly to feel equally polished.
+  useEffect(() => {
+    if (!showMenu) return undefined;
+
+    function handlePointerDown(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setShowMenu(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showMenu]);
 
   return (
     <div className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-card transition-smooth hover:shadow-md">
@@ -63,50 +99,41 @@ export default function ResumeCard({ resume, onPreview, onEdit, onDownload, onDe
               {resume.version} &middot; {formatFileSize(resume.fileSize)}
             </p>
           </div>
-          <div className="relative shrink-0">
+          <div ref={menuRef} className="relative shrink-0">
             <button
               type="button"
               onClick={() => setShowMenu((prev) => !prev)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-smooth hover:bg-slate-100 hover:text-slate-600"
+              aria-haspopup="true"
+              aria-expanded={showMenu}
               aria-label="More actions"
+              className={`flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-smooth hover:bg-slate-100 hover:text-slate-600 ${
+                showMenu ? "bg-slate-100 text-slate-600" : ""
+              }`}
             >
               <HiOutlineDotsVertical className="h-4 w-4" />
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-full z-10 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-                {/* <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onPreview(resume);
-                  }}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
-                >
-                  <HiOutlineEye className="h-4 w-4" />
-                  Preview
-                </button> */}
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-10 mt-1.5 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+              >
                 {!resume.isDefault && (
                   <button
+                    role="menuitem"
+                    disabled={isSettingDefault}
                     onClick={() => {
                       setShowMenu(false);
                       onSetDefault(resume);
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <HiOutlineStar className="h-4 w-4" />
-                    Set as Default
+                    <HiOutlineStar className="h-4 w-4 text-slate-400" />
+                    {isSettingDefault ? "Setting as default…" : "Set as Default"}
                   </button>
                 )}
+                {!resume.isDefault && <div className="my-1 border-t border-slate-100" />}
                 <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    onDownload(resume);
-                  }}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
-                >
-                  <HiOutlineDownload className="h-4 w-4" />
-                  Download
-                </button>
-                <button
+                  role="menuitem"
                   onClick={() => {
                     setShowMenu(false);
                     onDelete(resume);
