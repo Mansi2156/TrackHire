@@ -11,6 +11,10 @@ import Applications from "./pages/Applications";
 import AddApplication from "./pages/AddApplication";
 import EditApplication from "./pages/EditApplication";
 import ApplicationDetails from "./pages/ApplicationDetails";
+import Companies from "./pages/Companies";
+import AddCompany from "./pages/AddCompany";
+import EditCompany from "./pages/EditCompany";
+import CompanyDetails from "./pages/CompanyDetails";
 import ResumeManager from "./pages/ResumeManager";
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +37,10 @@ export default function App() {
             <Route path="/applications/new" element={<AddApplication />} />
             <Route path="/applications/:id" element={<ApplicationDetails />} />
             <Route path="/applications/:id/edit" element={<EditApplication />} />
+            <Route path="/companies" element={<Companies />} />
+            <Route path="/companies/new" element={<AddCompany />} />
+            <Route path="/companies/:id" element={<CompanyDetails />} />
+            <Route path="/companies/:id/edit" element={<EditCompany />} />
             <Route path="/resumes" element={<ResumeManager />} />
           </Route>
         </Route>

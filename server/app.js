@@ -5,6 +5,7 @@ const env = require("./config/env");
 const authRoutes = require("./routes/auth.routes");
 const applicationRoutes = require("./routes/application.routes");
 const resumeRoutes = require("./routes/resume.routes");
+const companyRoutes = require("./routes/company.routes");
 const notFound = require("./middleware/notFound.middleware");
 const errorHandler = require("./middleware/error.middleware");
 
@@ -33,6 +34,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/resumes", resumeRoutes);
+app.use("/api/companies", companyRoutes);
 
 // 404 + centralized error handling (must be last)
 app.use(notFound);

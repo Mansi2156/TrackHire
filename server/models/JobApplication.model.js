@@ -13,14 +13,25 @@ const jobApplicationSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    // Company Management (Phase 4) will introduce a Company model with a
-    // companyId reference. Until then the company name is stored as plain
-    // text on the application itself, per explicit scope decision.
+    // Company Management (Phase 4) has now introduced the Company model.
+    // `company` (free text) is kept as-is for full backward compatibility
+    // with existing applications, search, and display; `companyId` is an
+    // additive, optional reference used for accurate Company statistics
+    // and the Company Details page's application list. It's populated
+    // automatically by application.service.js when the `company` text
+    // matches an existing Company (case-insensitively), or explicitly if a
+    // client sends one directly — see assertCompanyOwnership/autoLinkCompany.
     company: {
       type: String,
       required: [true, "Company name is required"],
       trim: true,
       maxlength: [200, "Company name cannot exceed 200 characters"],
+    },
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      default: null,
+      index: true,
     },
     jobTitle: {
       type: String,

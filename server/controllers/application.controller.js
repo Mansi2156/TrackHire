@@ -28,6 +28,7 @@ const getApplication = asyncHandler(async (req, res) => {
   // layer so re-saving the document never risks writing back a populated
   // sub-document instead of a plain id.
   await application.populate("resumeId", "title version isDefault");
+  await application.populate("companyId", "name industry website");
   res.status(200).json({ success: true, application });
 });
 

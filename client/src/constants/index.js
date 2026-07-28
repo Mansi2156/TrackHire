@@ -64,3 +64,34 @@ export const STATUS_STYLES = {
 export const RESUME_ACCEPTED_EXTENSIONS = [".pdf", ".docx"];
 
 export const RESUME_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+// Mirrors server/constants/company.constants.js
+export const INDUSTRIES = [
+  "Technology",
+  "Fintech",
+  "E-Commerce",
+  "Healthcare",
+  "Education",
+  "Developer Tools",
+  "Social Media",
+  "Productivity SaaS",
+  "Gaming",
+  "Media & Entertainment",
+  "Telecommunications",
+  "Finance & Banking",
+  "Retail",
+  "Manufacturing",
+  "Automotive",
+  "Real Estate",
+  "Energy",
+  "Government",
+  "Non-Profit",
+  "Consulting",
+  "Other",
+];
+
+export const COMPANY_SORT_OPTIONS = [
+  { value: "newest", label: "Most Recent" },
+  { value: "oldest", label: "Oldest" },
+  { value: "name", label: "Company Name" },
+];

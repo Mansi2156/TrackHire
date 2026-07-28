@@ -1,5 +1,6 @@
 const JobApplication = require("../models/JobApplication.model");
 const Resume = require("../models/Resume.model");
+const Company = require("../models/Company.model");
 const ApiError = require("../utils/ApiError");
 
 // Fields a client is allowed to set. Deliberately excludes userId/archived —
@@ -7,6 +8,7 @@ const ApiError = require("../utils/ApiError");
 // its own dedicated endpoint so it can't be smuggled in through a generic update.
 const WRITABLE_FIELDS = [
   "company",
+  "companyId",
   "jobTitle",
   "location",
   "jobType",
@@ -62,6 +64,33 @@ async function assertResumeOwnership(userId, resumeId) {
   }
 }
 
+// Same ownership guard as assertResumeOwnership, for an explicitly-sent
+// companyId (Company Management, Phase 4).
+async function assertCompanyOwnership(userId, companyId) {
+  if (!companyId) return;
+  const company = await Company.findOne({ _id: companyId, userId }).select("_id");
+  if (!company) {
+    throw new ApiError(400, "Selected company was not found");
+  }
+}
+
+// Best-effort auto-link: the Applications form doesn't (yet) offer an
+// explicit company picker, so if the client didn't send a companyId
+// directly, try to match the free-text `company` name to one the user has
+// already added under Companies (case-insensitively). This keeps Company
+// statistics and the Company Details page's application list accurate
+// without requiring ApplicationForm.jsx to be redesigned in this phase.
+// Returns null (no link) when there's no match — callers decide whether
+// that clears an existing link or simply leaves companyId unset.
+async function findMatchingCompanyId(userId, companyName) {
+  if (!companyName) return null;
+  const match = await Company.findOne({
+    userId,
+    name: new RegExp(`^${escapeRegExp(companyName.trim())}$`, "i"),
+  }).select("_id");
+  return match ? match._id : null;
+}
+
 // A user shouldn't end up with two application records for the same
 // role at the same company. Compared case-insensitively so "Google" and
 // "google" are treated as the same duplicate.
@@ -86,6 +115,11 @@ async function assertNoDuplicateApplication(userId, company, jobTitle, excludeId
 async function createApplication(userId, payload) {
   const data = applyWorkModeRules(pickWritableFields(payload));
   await assertResumeOwnership(userId, data.resumeId);
+  if (data.companyId) {
+    await assertCompanyOwnership(userId, data.companyId);
+  } else if (data.company) {
+    data.companyId = await findMatchingCompanyId(userId, data.company);
+  }
   if (data.status === "Saved") {
     data.appliedDate = null;
     data.interviewDate = null;
@@ -163,6 +197,14 @@ async function updateApplication(userId, id, payload) {
   const application = await getOwnedApplication(userId, id);
   const data = applyWorkModeRules(pickWritableFields(payload), application.workMode);
   await assertResumeOwnership(userId, data.resumeId);
+  if (data.companyId) {
+    await assertCompanyOwnership(userId, data.companyId);
+  } else if (data.company !== undefined) {
+    // The company name was (re)sent as part of this update: keep the link
+    // in sync with it, which may also clear a stale link if it no longer
+    // matches any tracked company.
+    data.companyId = await findMatchingCompanyId(userId, data.company);
+  }
   if (data.status === "Saved") {
     data.appliedDate = null;
     data.interviewDate = null;

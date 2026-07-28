@@ -140,6 +140,10 @@ const baseFieldValidators = [
     .optional({ checkFalsy: true })
     .isMongoId()
     .withMessage("Invalid resume selected"),
+  body("companyId")
+    .optional({ checkFalsy: true })
+    .isMongoId()
+    .withMessage("Invalid company selected"),
   body("status")
     .optional({ checkFalsy: true })
     .isIn(STATUSES)
