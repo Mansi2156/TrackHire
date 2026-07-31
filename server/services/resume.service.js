@@ -1,10 +1,42 @@
 const Resume = require("../models/Resume.model");
+const JobApplication = require("../models/JobApplication.model");
 const ApiError = require("../utils/ApiError");
 const { saveResumeFile, deleteResumeFile } = require("../utils/fileStorage");
-const { MAX_RESUMES_PER_USER } = require("../constants/resume.constants");
+const {
+  MAX_RESUMES_PER_USER,
+  MAX_TAGS_PER_RESUME,
+  MAX_TAG_LENGTH,
+} = require("../constants/resume.constants");
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Tags may arrive as a comma-separated string (multipart/form-data, used by
+// upload/replace) or as an array (a plain JSON body). Normalizes either into
+// a trimmed, de-duplicated (case-insensitive), length- and count-capped list.
+// Returns undefined (meaning "leave as-is") only when the field wasn't sent
+// at all, so a caller can distinguish "no change" from "clear all tags".
+function normalizeTags(rawTags) {
+  if (rawTags === undefined) return undefined;
+  const list = Array.isArray(rawTags) ? rawTags : String(rawTags).split(",");
+  const seen = new Set();
+  const tags = [];
+  for (const raw of list) {
+    const tag = String(raw).trim();
+    if (!tag) continue;
+    if (tag.length > MAX_TAG_LENGTH) {
+      throw new ApiError(400, `Tags cannot exceed ${MAX_TAG_LENGTH} characters each`);
+    }
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    tags.push(tag);
+  }
+  if (tags.length > MAX_TAGS_PER_RESUME) {
+    throw new ApiError(400, `A resume can have at most ${MAX_TAGS_PER_RESUME} tags`);
+  }
+  return tags;
 }
 
 // Derives a display title from the original filename when the client
@@ -57,6 +89,7 @@ async function uploadResume(userId, file, payload = {}) {
   const title = (payload.title || titleFromFileName(file.originalname)).trim();
   const version = await computeNextVersion(userId, title);
   const makeDefault = await isFirstResumeForUser(userId);
+  const tags = normalizeTags(payload.tags) || [];
 
   const fileUrl = saveResumeFile(userId, file);
 
@@ -69,13 +102,33 @@ async function uploadResume(userId, file, payload = {}) {
     fileSize: file.size,
     mimeType: file.mimetype,
     isDefault: makeDefault,
+    tags,
   });
 
   return resume;
 }
 
+// Returns each of the user's resumes with an added `applicationsCount` —
+// how many of their JobApplications currently reference it via resumeId —
+// for the Resume Manager's "Used in X Applications" display. Computed with
+// a single aggregate over just this user's resume ids (not a per-resume
+// query) to stay cheap regardless of resume count.
 async function listResumes(userId) {
-  return Resume.find({ userId }).sort({ createdAt: -1 });
+  const resumes = await Resume.find({ userId }).sort({ createdAt: -1 });
+  if (resumes.length === 0) return [];
+
+  const resumeIds = resumes.map((r) => r._id);
+  const counts = await JobApplication.aggregate([
+    { $match: { resumeId: { $in: resumeIds } } },
+    { $group: { _id: "$resumeId", count: { $sum: 1 } } },
+  ]);
+  const countByResumeId = new Map(counts.map((c) => [String(c._id), c.count]));
+
+  return resumes.map((resume) => {
+    const plain = resume.toObject();
+    plain.applicationsCount = countByResumeId.get(String(resume._id)) || 0;
+    return plain;
+  });
 }
 
 // Every lookup is scoped to userId so one user can never read/modify
@@ -91,6 +144,17 @@ async function getOwnedResume(userId, id) {
 async function renameResume(userId, id, title) {
   const resume = await getOwnedResume(userId, id);
   resume.title = title.trim();
+  await resume.save();
+  return resume;
+}
+
+// Dedicated tag update, kept as its own small endpoint/service function
+// (mirroring the existing /:id/default pattern) rather than folding tags
+// into renameResume — keeps the well-established rename path untouched and
+// lets the frontend save a tag edit independently of a title edit.
+async function updateResumeTags(userId, id, rawTags) {
+  const resume = await getOwnedResume(userId, id);
+  resume.tags = normalizeTags(rawTags) || [];
   await resume.save();
   return resume;
 }
@@ -175,6 +239,7 @@ module.exports = {
   listResumes,
   getOwnedResume,
   renameResume,
+  updateResumeTags,
   replaceResumeFile,
   deleteResume,
   setDefaultResume,

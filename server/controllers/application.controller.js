@@ -80,6 +80,32 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
   });
 });
 
+// POST /api/applications/bulk-archive
+const bulkArchiveApplications = asyncHandler(async (req, res) => {
+  const { matchedCount } = await applicationService.bulkSetArchived(
+    req.user._id,
+    req.body.ids,
+    req.body.archived
+  );
+  res.status(200).json({
+    success: true,
+    message: req.body.archived
+      ? `${matchedCount} application${matchedCount === 1 ? "" : "s"} archived`
+      : `${matchedCount} application${matchedCount === 1 ? "" : "s"} unarchived`,
+    matchedCount,
+  });
+});
+
+// POST /api/applications/bulk-delete
+const bulkDeleteApplications = asyncHandler(async (req, res) => {
+  const { deletedCount } = await applicationService.bulkDelete(req.user._id, req.body.ids);
+  res.status(200).json({
+    success: true,
+    message: `${deletedCount} application${deletedCount === 1 ? "" : "s"} deleted`,
+    deletedCount,
+  });
+});
+
 module.exports = {
   createApplication,
   listApplications,
@@ -88,4 +114,6 @@ module.exports = {
   deleteApplication,
   archiveApplication,
   updateApplicationStatus,
+  bulkArchiveApplications,
+  bulkDeleteApplications,
 };

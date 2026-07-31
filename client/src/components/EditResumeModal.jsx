@@ -12,6 +12,7 @@ function isAcceptedFile(file) {
 
 export default function EditResumeModal({ resume, onClose, onSave, isSubmitting }) {
   const [title, setTitle] = useState(resume.title);
+  const [tags, setTags] = useState((resume.tags || []).join(", "));
   const [replacementFile, setReplacementFile] = useState(null);
   const [error, setError] = useState("");
   const inputRef = useRef(null);
@@ -37,8 +38,18 @@ export default function EditResumeModal({ resume, onClose, onSave, isSubmitting 
       setError("Resume title is required");
       return;
     }
+    const parsedTags = tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const originalTags = resume.tags || [];
+    const tagsChanged =
+      parsedTags.length !== originalTags.length ||
+      parsedTags.some((tag, i) => tag.toLowerCase() !== originalTags[i]?.toLowerCase());
+
     await onSave({
       title: title.trim() !== resume.title ? title.trim() : undefined,
+      tags: tagsChanged ? parsedTags : undefined,
       file: replacementFile,
     });
   }
@@ -52,6 +63,17 @@ export default function EditResumeModal({ resume, onClose, onSave, isSubmitting 
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+
+        <div>
+          <TextField
+            id="edit-resume-tags"
+            label="Tags (optional)"
+            placeholder="e.g. React, Frontend, Remote"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
+          <p className="mt-1.5 text-xs text-slate-400">Separate tags with commas.</p>
+        </div>
 
         <div>
           <p className="mb-1.5 block text-sm font-medium text-slate-700">Replace File (optional)</p>

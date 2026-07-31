@@ -93,8 +93,11 @@ Stores uploaded resume versions.
 | isDefault | Boolean |
 | fileSize |
 | mimeType |
+| tags | Optional. Array of short free-form labels (e.g. "React", "Remote"), max 6 tags, 30 chars each. Trimmed and case-insensitively de-duplicated before saving (UI/UX addition — added here per the "update this document first" rule) |
 | createdAt | |
 | updatedAt | |
+
+Kept as a simple embedded array on the Resume document rather than a separate `tags` collection — tags have no identity or behavior of their own outside the resume they describe, and are always read/written together with it, so a dedicated collection would only add a join for no practical benefit at this scale.
 
 ---
 

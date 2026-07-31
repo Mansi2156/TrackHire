@@ -5,6 +5,7 @@ const {
   getResumeStats,
   getResume,
   renameResume,
+  updateResumeTags,
   replaceResume,
   deleteResume,
   setDefaultResume,
@@ -16,6 +17,7 @@ const {
   uploadResumeValidator,
   renameResumeValidator,
   replaceResumeValidator,
+  updateTagsValidator,
 } = require("../validators/resume.validator");
 const validate = require("../middleware/validate.middleware");
 const { protect } = require("../middleware/auth.middleware");
@@ -36,6 +38,7 @@ router.post("/", uploadResumeFile, uploadResumeValidator, validate, uploadResume
 
 router.get("/:id", idParamValidator, validate, getResume);
 router.put("/:id", renameResumeValidator, validate, renameResume);
+router.patch("/:id/tags", updateTagsValidator, validate, updateResumeTags);
 router.put("/:id/replace", uploadResumeFile, replaceResumeValidator, validate, replaceResume);
 router.delete("/:id", idParamValidator, validate, deleteResume);
 router.patch("/:id/default", idParamValidator, validate, setDefaultResume);

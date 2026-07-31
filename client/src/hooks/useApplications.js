@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   archiveApplicationRequest,
+  bulkArchiveApplicationsRequest,
+  bulkDeleteApplicationsRequest,
   createApplicationRequest,
   deleteApplicationRequest,
   getApplicationRequest,
@@ -66,6 +68,22 @@ export function useArchiveApplicationMutation() {
   return useMutation({
     mutationFn: ({ id, archived }) => archiveApplicationRequest(id, archived),
     onSuccess: (_data, variables) => invalidate(variables.id),
+  });
+}
+
+export function useBulkArchiveApplicationsMutation() {
+  const invalidate = useInvalidateApplications();
+  return useMutation({
+    mutationFn: ({ ids, archived }) => bulkArchiveApplicationsRequest(ids, archived),
+    onSuccess: () => invalidate(),
+  });
+}
+
+export function useBulkDeleteApplicationsMutation() {
+  const invalidate = useInvalidateApplications();
+  return useMutation({
+    mutationFn: (ids) => bulkDeleteApplicationsRequest(ids),
+    onSuccess: () => invalidate(),
   });
 }
 

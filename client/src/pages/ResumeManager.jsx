@@ -14,6 +14,7 @@ import {
   useResumeStatsQuery,
   useResumesQuery,
   useSetDefaultResumeMutation,
+  useUpdateResumeTagsMutation,
   useUploadResumeMutation,
 } from "../hooks/useResumes";
 
@@ -34,6 +35,7 @@ export default function ResumeManager() {
 
   const uploadMutation = useUploadResumeMutation();
   const renameMutation = useRenameResumeMutation();
+  const updateTagsMutation = useUpdateResumeTagsMutation();
   const replaceMutation = useReplaceResumeMutation();
   const deleteMutation = useDeleteResumeMutation();
   const setDefaultMutation = useSetDefaultResumeMutation();
@@ -41,9 +43,9 @@ export default function ResumeManager() {
   const resumes = resumesData?.resumes || [];
   const stats = statsData?.stats;
 
-  const handleUpload = async ({ file, title }) => {
+  const handleUpload = async ({ file, title, tags }) => {
     try {
-      await uploadMutation.mutateAsync({ file, title });
+      await uploadMutation.mutateAsync({ file, title, tags });
       toast.success("Resume uploaded successfully");
       setUploadOpen(false);
     } catch (err) {
@@ -51,10 +53,13 @@ export default function ResumeManager() {
     }
   };
 
-  const handleEditSave = async ({ title, file }) => {
+  const handleEditSave = async ({ title, tags, file }) => {
     try {
       if (title) {
         await renameMutation.mutateAsync({ id: editResume._id, title });
+      }
+      if (tags !== undefined) {
+        await updateTagsMutation.mutateAsync({ id: editResume._id, tags });
       }
       if (file) {
         await replaceMutation.mutateAsync({ id: editResume._id, file });
@@ -208,7 +213,7 @@ export default function ResumeManager() {
           resume={editResume}
           onClose={() => setEditResume(null)}
           onSave={handleEditSave}
-          isSubmitting={renameMutation.isPending || replaceMutation.isPending}
+          isSubmitting={renameMutation.isPending || updateTagsMutation.isPending || replaceMutation.isPending}
         />
       )}
     </div>

@@ -4,13 +4,18 @@ import toast from "react-hot-toast";
 import {
   HiArrowLeft,
   HiOutlineMail,
-  HiOutlinePencil,
+  HiOutlinePencilAlt,
   HiOutlineTrash,
   HiOutlineArchive,
   HiExternalLink,
+  HiOutlineCalendar,
+  HiOutlineLocationMarker,
+  HiOutlineBriefcase,
+  HiOutlineCurrencyDollar,
 } from "react-icons/hi";
 import StatusBadge from "../components/StatusBadge";
 import StatusPipeline from "../components/StatusPipeline";
+import IconButton from "../components/IconButton";
 import {
   useApplicationQuery,
   useArchiveApplicationMutation,
@@ -80,18 +85,38 @@ export default function ApplicationDetails() {
     }
   };
 
+  // Compact "Role & Company Information" grid: each cell is a small
+  // label/value pair with a matching icon, replacing the previous single
+  // middot-joined inline text row for clearer scanning and alignment.
+  const infoItems = [
+    formatDate(app.appliedDate) && {
+      icon: HiOutlineCalendar,
+      label: "Applied",
+      value: formatDate(app.appliedDate, { month: "short", day: "numeric", year: "numeric" }),
+    },
+    {
+      icon: HiOutlineLocationMarker,
+      label: "Location",
+      value: app.workMode === "Remote" ? "Remote" : app.location || "—",
+    },
+    app.jobType && { icon: HiOutlineBriefcase, label: "Employment", value: app.jobType },
+    app.salaryRange && { icon: HiOutlineCurrencyDollar, label: "Salary", value: app.salaryRange },
+  ].filter(Boolean);
+
   const details = [
     app.resumeId && {
       label: "Resume Used",
       value: app.resumeId.version ? `${app.resumeId.title} (${app.resumeId.version})` : app.resumeId.title,
     },
-    app.jobType && { label: "Employment", value: app.jobType },
-    app.salaryRange && { label: "Salary", value: app.salaryRange },
-    app.location && { label: "Location", value: app.location },
     formatDate(app.interviewDate) && {
       label: "Next Interview",
       value: formatDate(app.interviewDate, { month: "short", day: "numeric", year: "numeric" }),
     },
+    app.deadline &&
+      formatDate(app.deadline) && {
+        label: "Deadline",
+        value: formatDate(app.deadline, { month: "short", day: "numeric", year: "numeric" }),
+      },
   ].filter(Boolean);
 
   return (
@@ -104,58 +129,72 @@ export default function ApplicationDetails() {
         Back to Applications
       </Link>
 
-      {/* Header */}
-      <div className="mb-6 rounded-2xl border border-slate-100 bg-white p-8 shadow-card">
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
-          <div className="flex items-center gap-5">
+      {/* Role and Company Information */}
+      <div className="mb-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-card sm:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-center gap-4">
             <div
-              className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-2xl font-bold text-white shadow-sm ${getCompanyColor(
+              className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-sm ${getCompanyColor(
                 app.company
               )}`}
             >
               {getCompanyInitial(app.company)}
             </div>
-            <div>
-              <div className="mb-1 flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-bold text-slate-900">{app.company}</h1>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold text-slate-900">{app.company}</h1>
+              <p className="mt-0.5 truncate text-base text-slate-600">{app.jobTitle}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <StatusBadge status={app.status} />
-                {app.archived && <StatusBadge status="Archived" className="!bg-slate-100 !text-slate-500 !border-slate-200" />}
-              </div>
-              <p className="text-lg text-slate-600">{app.jobTitle}</p>
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-400">
-                {formatDate(app.appliedDate) && <span>Applied {formatDate(app.appliedDate)}</span>}
-                {app.location && <span>&middot; {app.location}</span>}
-                {app.jobType && <span>&middot; {app.jobType}</span>}
-                {app.salaryRange && (
-                  <span className="font-medium text-emerald-600">&middot; {app.salaryRange}</span>
+                {app.archived && (
+                  <StatusBadge status="Archived" className="!border-slate-200 !bg-slate-100 !text-slate-500" />
                 )}
               </div>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
+
+          {/* Icon-only actions with hover tooltips */}
+          <div className="flex shrink-0 items-center gap-1.5 self-start">
+            <IconButton
+              icon={HiOutlineArchive}
+              label={app.archived ? "Unarchive" : "Archive"}
+              tooltipPosition="bottom"
               onClick={handleArchiveToggle}
-              className="flex h-9 items-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-600 transition-smooth hover:bg-slate-50"
-            >
-              <HiOutlineArchive className="h-4 w-4" />
-              {app.archived ? "Unarchive" : "Archive"}
-            </button>
-            <Link
-              to={`/applications/${app._id}/edit`}
-              className="flex h-9 items-center gap-2 rounded-xl border border-brand-200 px-4 text-sm font-medium text-brand-600 transition-smooth hover:bg-brand-50"
-            >
-              <HiOutlinePencil className="h-4 w-4" />
-              Edit
-            </Link>
-            <button
+            />
+            <IconButton
+              icon={HiOutlinePencilAlt}
+              label="Edit"
+              variant="brand"
+              tooltipPosition="bottom"
+              onClick={() => navigate(`/applications/${app._id}/edit`)}
+            />
+            <IconButton
+              icon={HiOutlineTrash}
+              label="Delete"
+              variant="danger"
+              tooltipPosition="bottom"
               onClick={handleDelete}
-              className="flex h-9 items-center gap-2 rounded-xl border border-red-200 px-4 text-sm font-medium text-red-500 transition-smooth hover:bg-red-50"
-            >
-              <HiOutlineTrash className="h-4 w-4" />
-              Delete
-            </button>
+              disabled={isDeleting}
+            />
           </div>
         </div>
+
+        {/* Compact, well-aligned info grid (replaces the old inline
+            middot-separated meta line) */}
+        {infoItems.length > 0 && (
+          <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-100 pt-5 sm:grid-cols-4">
+            {infoItems.map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex items-start gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-400">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
+                  <p className="mt-0.5 truncate text-sm font-semibold text-slate-800">{value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">

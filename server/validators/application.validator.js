@@ -171,6 +171,29 @@ const updateStatusValidator = [
   checkExact(),
 ];
 
+// Bulk selection actions (Applications list). Capped at 100 ids per request
+// — matching the existing max page size — since that's already more than a
+// single page can select, so no legitimate UI action needs more.
+const bulkIdsValidator = [
+  body("ids")
+    .isArray({ min: 1, max: 100 })
+    .withMessage("ids must be a non-empty array of at most 100 application ids"),
+  body("ids.*").isMongoId().withMessage("Invalid application id in selection"),
+];
+
+const bulkArchiveValidator = [
+  ...bulkIdsValidator,
+  body("archived")
+    .notEmpty()
+    .withMessage("archived is required")
+    .isBoolean()
+    .withMessage("archived must be true or false")
+    .toBoolean(),
+  checkExact(),
+];
+
+const bulkDeleteValidator = [...bulkIdsValidator, checkExact()];
+
 const archiveValidator = [
   ...idParamValidator,
   body("archived")
@@ -218,4 +241,6 @@ module.exports = {
   updateStatusValidator,
   archiveValidator,
   listQueryValidator,
+  bulkArchiveValidator,
+  bulkDeleteValidator,
 };

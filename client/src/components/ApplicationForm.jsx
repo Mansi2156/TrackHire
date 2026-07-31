@@ -5,6 +5,7 @@ import TextField from "./TextField";
 import TextAreaField from "./TextAreaField";
 import SelectField from "./SelectField";
 import ResumeSelectField from "./ResumeSelectField";
+import CompanySelectField from "./CompanySelectField";
 import Button from "./Button";
 import { APPLICATION_STATUSES, JOB_TYPES, WORK_MODES } from "../constants";
 import { useResumesQuery } from "../hooks/useResumes";
@@ -149,7 +150,7 @@ export default function ApplicationForm({
     <form onSubmit={handleSubmit(submit)} className="space-y-6">
       {/* Company + Role */}
         <div className="grid grid-cols-2 gap-6">
-          <TextField
+          <CompanySelectField
             id="company"
             label="Company Name *"
             placeholder="e.g. Google"

@@ -6,6 +6,7 @@ import {
   renameResumeRequest,
   replaceResumeRequest,
   setDefaultResumeRequest,
+  updateResumeTagsRequest,
   uploadResumeRequest,
 } from "../api/resumeService";
 
@@ -49,6 +50,14 @@ export function useRenameResumeMutation() {
   const invalidate = useInvalidateResumes();
   return useMutation({
     mutationFn: ({ id, title }) => renameResumeRequest(id, title),
+    onSuccess: () => invalidate(),
+  });
+}
+
+export function useUpdateResumeTagsMutation() {
+  const invalidate = useInvalidateResumes();
+  return useMutation({
+    mutationFn: ({ id, tags }) => updateResumeTagsRequest(id, tags),
     onSuccess: () => invalidate(),
   });
 }

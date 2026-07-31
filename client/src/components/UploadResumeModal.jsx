@@ -13,6 +13,7 @@ function isAcceptedFile(file) {
 export default function UploadResumeModal({ onClose, onUpload, isSubmitting }) {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState("");
+  const [tags, setTags] = useState("");
   const [error, setError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef(null);
@@ -43,7 +44,11 @@ export default function UploadResumeModal({ onClose, onUpload, isSubmitting }) {
       setError("Please select a resume file to upload");
       return;
     }
-    await onUpload({ file, title: title.trim() });
+    const parsedTags = tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    await onUpload({ file, title: title.trim(), tags: parsedTags });
   }
 
   return (
@@ -91,6 +96,15 @@ export default function UploadResumeModal({ onClose, onUpload, isSubmitting }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+
+        <TextField
+          id="resume-tags"
+          label="Tags (optional)"
+          placeholder="e.g. React, Frontend, Remote"
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+        />
+        <p className="-mt-2 text-xs text-slate-400">Separate tags with commas.</p>
 
         <div className="flex items-center justify-end gap-3 pt-2">
           <button

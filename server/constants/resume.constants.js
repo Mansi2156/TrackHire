@@ -20,9 +20,22 @@ const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 // bounded for the MVP. Also a documented minor-detail decision.
 const MAX_RESUMES_PER_USER = 20;
 
+// Tags (UI/UX addition): free-form labels like "Frontend", "React" shown as
+// badge chips on the Resume Manager cards. Kept as a simple embedded array
+// on the Resume document (not a separate collection) since tags have no
+// identity or behavior of their own outside the resume they describe, and
+// are always read/written together with it — a dedicated collection would
+// add a join for no practical benefit at this scale. Limits are a minor
+// implementation detail (not specified in DATABASE_DESIGN.md), documented
+// here per that rule.
+const MAX_TAGS_PER_RESUME = 6;
+const MAX_TAG_LENGTH = 30;
+
 module.exports = {
   ALLOWED_MIME_TYPES,
   ALLOWED_EXTENSIONS,
   MAX_FILE_SIZE_BYTES,
   MAX_RESUMES_PER_USER,
+  MAX_TAGS_PER_RESUME,
+  MAX_TAG_LENGTH,
 };

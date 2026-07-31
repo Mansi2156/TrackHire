@@ -30,6 +30,16 @@ export async function archiveApplicationRequest(id, archived) {
   return data;
 }
 
+export async function bulkArchiveApplicationsRequest(ids, archived) {
+  const { data } = await axiosInstance.post("/applications/bulk-archive", { ids, archived });
+  return data;
+}
+
+export async function bulkDeleteApplicationsRequest(ids) {
+  const { data } = await axiosInstance.post("/applications/bulk-delete", { ids });
+  return data;
+}
+
 export async function updateApplicationStatusRequest(id, status) {
   const { data } = await axiosInstance.patch(`/applications/${id}/status`, { status });
   return data;

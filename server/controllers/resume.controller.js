@@ -45,6 +45,16 @@ const renameResume = asyncHandler(async (req, res) => {
   });
 });
 
+// PATCH /api/resumes/:id/tags
+const updateResumeTags = asyncHandler(async (req, res) => {
+  const resume = await resumeService.updateResumeTags(req.user._id, req.params.id, req.body.tags);
+  res.status(200).json({
+    success: true,
+    message: "Resume tags updated",
+    resume,
+  });
+});
+
 // PUT /api/resumes/:id/replace
 const replaceResume = asyncHandler(async (req, res) => {
   if (!req.file) {
@@ -107,6 +117,7 @@ module.exports = {
   getResumeStats,
   getResume,
   renameResume,
+  updateResumeTags,
   replaceResume,
   deleteResume,
   setDefaultResume,

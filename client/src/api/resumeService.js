@@ -20,16 +20,24 @@ export async function getResumeRequest(id) {
   return data;
 }
 
-export async function uploadResumeRequest({ file, title }) {
+export async function uploadResumeRequest({ file, title, tags }) {
   const formData = new FormData();
   formData.append("file", file);
   if (title) formData.append("title", title);
+  // Sent as a comma-separated string over multipart/form-data (matching how
+  // every other text field arrives here); the backend splits/normalizes it.
+  if (tags && tags.length > 0) formData.append("tags", tags.join(","));
   const { data } = await axiosInstance.post("/resumes", formData, MULTIPART_CONFIG);
   return data;
 }
 
 export async function renameResumeRequest(id, title) {
   const { data } = await axiosInstance.put(`/resumes/${id}`, { title });
+  return data;
+}
+
+export async function updateResumeTagsRequest(id, tags) {
+  const { data } = await axiosInstance.patch(`/resumes/${id}/tags`, { tags });
   return data;
 }
 

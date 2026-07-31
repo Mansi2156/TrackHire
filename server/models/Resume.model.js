@@ -47,6 +47,21 @@ const resumeSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    // UI/UX addition: short free-form labels (e.g. "Frontend", "Remote")
+    // shown as badge chips on the Resume Manager card. Normalized and
+    // capped in resume.service.js's normalizeTags() before ever reaching
+    // the model, so schema-level validation here just guards against
+    // direct/second-path writes.
+    tags: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: function (value) {
+          return Array.isArray(value) && value.length <= 6;
+        },
+        message: "A resume can have at most 6 tags",
+      },
+    },
   },
   { timestamps: true }
 );

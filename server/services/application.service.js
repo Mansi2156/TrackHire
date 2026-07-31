@@ -232,6 +232,24 @@ async function setArchived(userId, id, archived) {
   return application;
 }
 
+// Bulk selection actions (Applications list). Both are scoped with
+// `userId` directly in the filter (not a per-id ownership loop) so one user
+// can never affect another's applications, and ids that don't belong to the
+// user (or don't exist) are silently excluded rather than erroring the
+// whole batch — matching how a partial multi-select action should behave.
+async function bulkSetArchived(userId, ids, archived) {
+  const result = await JobApplication.updateMany(
+    { _id: { $in: ids }, userId },
+    { $set: { archived } }
+  );
+  return { matchedCount: result.matchedCount ?? result.n ?? 0 };
+}
+
+async function bulkDelete(userId, ids) {
+  const result = await JobApplication.deleteMany({ _id: { $in: ids }, userId });
+  return { deletedCount: result.deletedCount ?? 0 };
+}
+
 async function updateStatus(userId, id, status) {
   const application = await getOwnedApplication(userId, id);
   application.status = status;
@@ -250,5 +268,7 @@ module.exports = {
   updateApplication,
   deleteApplication,
   setArchived,
+  bulkSetArchived,
+  bulkDelete,
   updateStatus,
 };
