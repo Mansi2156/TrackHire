@@ -95,6 +95,29 @@ export default function Interviews() {
   const deleteMutation = useDeleteInterviewMutation();
 
   const interviews = data?.interviews || [];
+  const completedStatuses = [
+    "Completed",
+    "Passed",
+    "Failed",
+    "Cancelled",
+  ];
+
+  const upcomingInterviews = interviews
+    .filter((iv) => !completedStatuses.includes(iv.status))
+    .sort(
+      (a, b) =>
+        new Date(b.interviewDate).getTime() -
+        new Date(a.interviewDate).getTime()
+    );
+
+  const completedInterviews = interviews
+    .filter((iv) => completedStatuses.includes(iv.status))
+    .sort(
+      (a, b) =>
+        new Date(b.interviewDate).getTime() -
+        new Date(a.interviewDate).getTime()
+    );
+    
   const pagination = data?.pagination;
   const stats = statsData?.stats;
 
@@ -110,6 +133,124 @@ export default function Interviews() {
       toast.error(err.message);
     }
   };
+
+  const renderInterviewRow = (iv) => {
+    const ModeIcon = MODE_ICONS[iv.mode] || HiOutlineVideoCamera;
+
+    return (
+      <tr
+        key={iv._id}
+        onClick={() => navigate(`/interviews/${iv._id}`)}
+        className="group cursor-pointer border-b border-slate-50 last:border-0 transition-smooth hover:bg-slate-50"
+      >
+        <td className="px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white ${getCompanyColor(
+                iv.company
+              )}`}
+            >
+              {getCompanyInitial(iv.company)}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-slate-900">{iv.company}</p>
+              <p className="truncate text-xs text-slate-400">{iv.jobTitle}</p>
+            </div>
+          </div>
+        </td>
+        <td className="px-5 py-4 font-medium text-slate-700">{iv.round}</td>
+        <td className="px-5 py-4 text-slate-600">
+          {INTERVIEW_TYPE_ICONS[iv.type]} {iv.type}
+        </td>
+        <td className="px-5 py-4">
+          <p className="font-medium text-slate-700">{formatDate(iv.interviewDate)}</p>
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
+            <HiOutlineClock className="h-3 w-3" />
+            {formatTime(iv.interviewDate)}
+          </p>
+        </td>
+        <td className="px-5 py-4">
+          <span className="flex items-center gap-1.5 text-xs text-slate-500">
+            <ModeIcon className="h-3.5 w-3.5" />
+            {iv.mode}
+          </span>
+        </td>
+        <td className="px-5 py-4">
+          <StatusBadge status={iv.status} styles={INTERVIEW_STATUS_STYLES} />
+        </td>
+        <td className="px-5 py-4">
+          <div
+            className="flex items-center justify-end gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <IconButton
+              icon={HiOutlineEye}
+              label="View"
+              onClick={() => navigate(`/interviews/${iv._id}`)}
+            />
+            <IconButton
+              icon={HiOutlinePencilAlt}
+              label="Edit"
+              variant="brand"
+              onClick={() => navigate(`/interviews/${iv._id}/edit`)}
+            />
+            <IconButton
+              icon={HiOutlineTrash}
+              label="Delete"
+              variant="danger"
+              onClick={() => handleDelete(iv)}
+            />
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
+  const renderInterviewTable = (title, rows) => (
+    <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-card">
+      {/* Header */}
+      <div className="flex items-center border-b border-slate-100 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <span
+            className={`h-6 w-1 rounded-full ${
+              title === "Upcoming Interviews"
+                ? "bg-blue-500"
+                : "bg-emerald-500"
+            }`}
+          />
+
+          <h3 className="text-lg font-semibold text-slate-900">
+            {title}
+          </h3>
+
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              title === "Upcoming Interviews"
+                ? "bg-blue-50 text-blue-600"
+                : "bg-emerald-50 text-emerald-600"
+            }`}
+          >
+            {rows.length}
+          </span>
+        </div>
+      </div>
+
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-slate-50/50 border-b border-slate-100">
+            {["Company & Role", "Round", "Type", "Date & Time", "Mode", "Status", ""].map((h) => (
+              <th key={h} className="px-5 py-3.5 text-left text-xs font-medium text-slate-400">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(renderInterviewRow)}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 sm:px-10">
@@ -190,28 +331,44 @@ export default function Interviews() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-card">
-        {isLoading ? (
+      {/* Loading */}
+      {isLoading ? (
+        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-card">
           <div className="space-y-3 p-6">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100" />
             ))}
           </div>
-        ) : isError ? (
-          <div className="p-8 text-center text-sm text-red-600">{error.message}</div>
-        ) : interviews.length === 0 ? (
+        </div>
+
+      ) : isError ? (
+
+        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-card">
+          <div className="p-8 text-center text-sm text-red-600">
+            {error.message}
+          </div>
+        </div>
+
+      ) : interviews.length === 0 ? (
+
+        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-card">
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50">
               <HiOutlineCalendar className="h-7 w-7 text-brand-600" />
             </div>
+
             <h3 className="text-sm font-semibold text-slate-800">
-              {search || status || type ? "No interviews match your filters" : "No interviews scheduled yet"}
+              {search || status || type
+                ? "No interviews match your filters"
+                : "No interviews scheduled yet"}
             </h3>
+
             <p className="mx-auto mt-1 max-w-xs text-sm text-slate-500">
               {search || status || type
                 ? "Try adjusting your search or filters."
                 : "Schedule your first interview to start tracking rounds."}
             </p>
+
             {!search && !status && !type && (
               <Link
                 to="/interviews/new"
@@ -222,104 +379,51 @@ export default function Interviews() {
               </Link>
             )}
           </div>
-        ) : (
-          <>
-            <div className={`overflow-x-auto transition-opacity ${isFetching ? "opacity-60" : ""}`}>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100">
-                    {["Company & Role", "Round", "Type", "Date & Time", "Mode", "Status", ""].map((h) => (
-                      <th key={h} className="px-5 py-3.5 text-left text-xs font-medium text-slate-400">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {interviews.map((iv) => {
-                    const ModeIcon = MODE_ICONS[iv.mode] || HiOutlineVideoCamera;
-                    return (
-                      <tr
-                        key={iv._id}
-                        onClick={() => navigate(`/interviews/${iv._id}`)}
-                        className="group cursor-pointer border-b border-slate-50 last:border-0 transition-smooth hover:bg-slate-50"
-                      >
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white ${getCompanyColor(
-                                iv.company
-                              )}`}
-                            >
-                              {getCompanyInitial(iv.company)}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-slate-900">{iv.company}</p>
-                              <p className="truncate text-xs text-slate-400">{iv.jobTitle}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 font-medium text-slate-700">{iv.round}</td>
-                        <td className="px-5 py-4 text-slate-600">
-                          {INTERVIEW_TYPE_ICONS[iv.type]} {iv.type}
-                        </td>
-                        <td className="px-5 py-4">
-                          <p className="font-medium text-slate-700">{formatDate(iv.interviewDate)}</p>
-                          <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
-                            <HiOutlineClock className="h-3 w-3" />
-                            {formatTime(iv.interviewDate)}
-                          </p>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                            <ModeIcon className="h-3.5 w-3.5" />
-                            {iv.mode}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <StatusBadge status={iv.status} styles={INTERVIEW_STATUS_STYLES} />
-                        </td>
-                        <td className="px-5 py-4">
-                          <div
-                            className="flex items-center justify-end gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <IconButton
-                              icon={HiOutlineEye}
-                              label="View"
-                              onClick={() => navigate(`/interviews/${iv._id}`)}
-                            />
-                            <IconButton
-                              icon={HiOutlinePencilAlt}
-                              label="Edit"
-                              variant="brand"
-                              onClick={() => navigate(`/interviews/${iv._id}/edit`)}
-                            />
-                            <IconButton
-                              icon={HiOutlineTrash}
-                              label="Delete"
-                              variant="danger"
-                              onClick={() => handleDelete(iv)}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {pagination && (
-              <Pagination
-                page={pagination.page}
-                totalPages={pagination.totalPages}
-                total={pagination.total}
-                onPageChange={setPage}
-              />
+        </div>
+
+      ) : (
+
+        <div
+          className={`space-y-4 transition-opacity ${
+            isFetching ? "opacity-60" : ""
+          }`}
+        >
+          {/* Upcoming */}
+
+          {upcomingInterviews.length > 0 &&
+            renderInterviewTable(
+              "Upcoming Interviews",
+              upcomingInterviews
             )}
-          </>
-        )}
-      </div>
+
+          {/* Divider */}
+
+          {upcomingInterviews.length > 0 &&
+            completedInterviews.length > 0 && (
+              <div className="px-3">
+                <div className="border-t border-slate-200" />
+              </div>
+            )}
+
+          {/* Completed */}
+
+          {completedInterviews.length > 0 &&
+            renderInterviewTable(
+              "Completed Interviews",
+              completedInterviews
+            )}
+
+          {pagination && (
+            <Pagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              onPageChange={setPage}
+            />
+          )}
+        </div>
+
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   HiArrowLeft,
-  HiOutlinePencil,
+  HiOutlinePencilAlt,
   HiOutlineTrash,
   HiOutlineGlobeAlt,
   HiOutlineLocationMarker,
@@ -19,6 +19,7 @@ import {
 } from "../hooks/useCompanies";
 import { getCompanyColor, getCompanyInitial } from "../utils/companyAvatar";
 import { formatRelativeDays } from "../utils/relativeTime";
+import IconButton from "../components/IconButton";
 
 function formatShortDate(value) {
   if (!value) return "—";
@@ -139,7 +140,7 @@ export default function CompanyDetails() {
               )}
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          {/* <div className="flex shrink-0 items-center gap-2">
             <Link
               to={`/companies/${company._id}/edit`}
               className="flex h-9 items-center gap-2 rounded-xl border border-brand-200 px-4 text-sm font-medium text-brand-600 transition-smooth hover:bg-brand-50"
@@ -154,6 +155,23 @@ export default function CompanyDetails() {
               <HiOutlineTrash className="h-4 w-4" />
               Delete
             </button>
+          </div> */}
+          <div className="flex shrink-0 items-center gap-2">
+            <Link to={`/companies/${company._id}/edit`}>
+              <IconButton
+                icon={HiOutlinePencilAlt}
+                label="Edit"
+                variant="brand"
+              />
+            </Link>
+
+            <IconButton
+              icon={HiOutlineTrash}
+              label="Delete"
+              variant="danger"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            />
           </div>
         </div>
       </div>

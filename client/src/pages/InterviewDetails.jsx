@@ -162,12 +162,19 @@ export default function InterviewDetails() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Link
+            {/* <Link
               to={`/interviews/${interview._id}/edit`}
               className="flex h-9 items-center gap-2 rounded-xl border border-brand-200 px-4 text-sm font-medium text-brand-600 transition-smooth hover:bg-brand-50"
             >
               <HiOutlinePencilAlt className="h-4 w-4" />
               Edit
+            </Link> */}
+            <Link to={`/interviews/${interview._id}/edit`}>
+              <IconButton
+                icon={HiOutlinePencilAlt}
+                label="Edit"
+                variant="brand"
+              />
             </Link>
             <IconButton
               icon={HiOutlineTrash}
