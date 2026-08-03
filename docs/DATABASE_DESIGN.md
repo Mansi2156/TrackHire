@@ -133,21 +133,26 @@ Stores every job application.
 
 ### Interviews
 
-Stores interview rounds for a job application.
+Stores interview rounds for a job application. **Implemented in Phase 5.**
 
 | Field | Notes |
 |-------|-------|
+| userId | Reference → Users. Not in the field list originally sketched above (only `applicationId` was), but stored directly here — same as every other user-owned collection (Companies, Resumes, Job Applications) — so list/filter/pagination queries can be scoped and indexed on `userId` directly instead of joining through Job Applications on every request. Added here per the "update this document first" rule |
 | applicationId | Reference → Job Applications |
-| round | 1, 2, 3... |
-| type | HR Screening, Technical, Managerial, Hiring Manager, Panel, Final, Behavioral, Case Study, Assignment Review, Custom |
-| status | Scheduled, Completed, Passed, Failed, Cancelled, Rescheduled |
-| interviewDate | |
-| mode | Online, On-site, Phone |
-| feedback | Optional |
+| round | One of a fixed set matching the Figma's round picker: `Round 1`, `Round 2`, `Round 3`, `HR Round`, `Final Round`, `Offer Call`. Supersedes the originally-sketched free-numeric `1, 2, 3...` — company-specific round names (e.g. "HR Round") don't fit a plain integer, and the UI is the source of truth for exactly which options are offered |
+| type | `Technical`, `Behavioral`, `System Design`, `HR`, `Take-Home`, `Panel`, `Culture Fit` — matches the Figma's type picker exactly. Supersedes the originally-sketched list (`HR Screening, Technical, Managerial, ...`), which didn't match the actual UI |
+| status | Scheduled, Completed, Passed, Failed, Cancelled, Rescheduled *(unchanged from the original sketch — already matched the Figma)* |
+| interviewDate | Single combined date+time value (the Figma's separate date/time inputs are combined into one `Date` before saving), matching how `jobApplications.interviewDate` already models this |
+| mode | `Video Call`, `Phone`, `On-site`, `Async` — matches the Figma's mode toggle. Supersedes the originally-sketched `Online, On-site, Phone`, which didn't distinguish a live video call from an async take-home submission |
+| link | Optional. Meeting link (Video Call / Async) or office address (On-site) — a single free-text field, since only one applies at a time depending on `mode`. Not in the original sketch; added here per the "update this document first" rule, matching the Figma's "Meeting Link" / "Office Location" field |
+| notes | Optional. Preparation notes, filled in before the interview. Same "add + document" precedent as `link` above |
+| feedback | Optional. Post-interview feedback/outcome commentary *(unchanged from the original sketch)* |
 | createdAt | |
 | updatedAt | |
 
-Not yet implemented (planned for Phase 5). Until then, `jobApplications.interviewDate` is used as a proxy for "has an interview" wherever interview counts are shown (e.g. Company statistics).
+Deleting a Job Application **cascade-deletes** its Interviews (unlike Company deletion, which only unlinks — see Job Applications above): an interview round has no meaning independent of the application it belongs to.
+
+Now that Interviews exist, `jobApplications.interviewDate` is retained purely for backward compatibility with Phases 1–4 and is no longer the source of truth for interview counts/statistics — Company statistics and similar aggregates should prefer the Interviews collection going forward, though existing proxy-based aggregates from earlier phases haven't been retroactively migrated in this phase.
 
 ---
 
@@ -162,7 +167,7 @@ Stores notes related to a job application.
 | createdBy | Reference → Users |
 | createdAt | |
 
-Not yet implemented as a separate collection (planned for Phase 5, alongside Interviews). `jobApplications.notes` and `companies.notes` currently cover single free-text notes per record.
+Not yet implemented as a separate collection. `jobApplications.notes` and `companies.notes` continue to cover single free-text notes per record; a per-application multi-note thread isn't part of the currently approved MVP phases (see `docs/MVP_SCOPE.md`) and remains a candidate for a future phase.
 
 ---
 

@@ -1,6 +1,7 @@
 const JobApplication = require("../models/JobApplication.model");
 const Resume = require("../models/Resume.model");
 const Company = require("../models/Company.model");
+const Interview = require("../models/Interview.model");
 const ApiError = require("../utils/ApiError");
 
 // Fields a client is allowed to set. Deliberately excludes userId/archived —
@@ -222,6 +223,11 @@ async function deleteApplication(userId, id) {
   if (!application) {
     throw new ApiError(404, "Application not found");
   }
+  // Unlike Company deletion (which only unlinks applications — see
+  // company.service.js), Interviews (Phase 5) have no meaning independent
+  // of the application round they belong to, so they're cascade-deleted
+  // along with it rather than orphaned.
+  await Interview.deleteMany({ userId, applicationId: id });
   return application;
 }
 

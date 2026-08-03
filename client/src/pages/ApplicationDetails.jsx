@@ -21,7 +21,9 @@ import {
   useArchiveApplicationMutation,
   useDeleteApplicationMutation,
 } from "../hooks/useApplications";
+import { useApplicationInterviewsQuery } from "../hooks/useInterviews";
 import { getCompanyColor, getCompanyInitial } from "../utils/companyAvatar";
+import { INTERVIEW_STATUS_STYLES } from "../constants";
 
 function formatDate(value, options = { month: "long", day: "numeric", year: "numeric" }) {
   if (!value) return null;
@@ -36,6 +38,7 @@ export default function ApplicationDetails() {
   const { data, isLoading, isError, error } = useApplicationQuery(id);
   const archiveMutation = useArchiveApplicationMutation();
   const deleteMutation = useDeleteApplicationMutation();
+  const { data: interviewsData } = useApplicationInterviewsQuery(id);
   const [isDeleting, setIsDeleting] = useState(false);
 
   if (isLoading) {
@@ -57,6 +60,7 @@ export default function ApplicationDetails() {
   }
 
   const app = data.application;
+  const interviews = interviewsData?.interviews || [];
 
   const handleArchiveToggle = async () => {
     try {
@@ -261,6 +265,41 @@ export default function ApplicationDetails() {
               <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">{app.notes}</p>
             </div>
           )}
+
+          {/* Interviews (Phase 5) — every round scheduled for this
+              application, linking out to its own details page. */}
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-card">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-semibold text-slate-900">Interviews</h3>
+              <Link
+                to={`/interviews/new?applicationId=${app._id}`}
+                className="text-xs font-medium text-brand-600 hover:text-brand-700"
+              >
+                + Schedule Interview
+              </Link>
+            </div>
+            {interviews.length === 0 ? (
+              <p className="text-sm text-slate-500">No interviews scheduled for this application yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {interviews.map((iv) => (
+                  <div
+                    key={iv._id}
+                    onClick={() => navigate(`/interviews/${iv._id}`)}
+                    className="flex cursor-pointer items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 transition-smooth hover:bg-slate-100"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {iv.round} &middot; {iv.type}
+                      </p>
+                      <p className="text-xs text-slate-400">{formatDate(iv.interviewDate)}</p>
+                    </div>
+                    <StatusBadge status={iv.status} styles={INTERVIEW_STATUS_STYLES} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right column */}

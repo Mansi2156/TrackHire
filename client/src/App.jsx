@@ -16,6 +16,10 @@ import AddCompany from "./pages/AddCompany";
 import EditCompany from "./pages/EditCompany";
 import CompanyDetails from "./pages/CompanyDetails";
 import ResumeManager from "./pages/ResumeManager";
+import Interviews from "./pages/Interviews";
+import ScheduleInterview from "./pages/ScheduleInterview";
+import EditInterview from "./pages/EditInterview";
+import InterviewDetails from "./pages/InterviewDetails";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -42,6 +46,10 @@ export default function App() {
             <Route path="/companies/:id" element={<CompanyDetails />} />
             <Route path="/companies/:id/edit" element={<EditCompany />} />
             <Route path="/resumes" element={<ResumeManager />} />
+            <Route path="/interviews" element={<Interviews />} />
+            <Route path="/interviews/new" element={<ScheduleInterview />} />
+            <Route path="/interviews/:id" element={<InterviewDetails />} />
+            <Route path="/interviews/:id/edit" element={<EditInterview />} />
           </Route>
         </Route>
 

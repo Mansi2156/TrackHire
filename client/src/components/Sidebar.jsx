@@ -14,14 +14,14 @@ import {
 } from "react-icons/hi";
 import { useAuth } from "../hooks/useAuth";
 
-// Interviews, Calendar, Analytics, AI Assistant, and Settings belong to
-// future phases. They're shown as part of the app shell per the Figma
-// design but stay disabled until their module is implemented.
+// Calendar, Analytics, AI Assistant, and Settings belong to future phases.
+// They're shown as part of the app shell per the Figma design but stay
+// disabled until their module is implemented. Interviews (Phase 5) is now enabled.
 const NAV_ITEMS = [
   { label: "Dashboard", icon: HiOutlineViewGrid, to: "/dashboard", enabled: true },
   { label: "Applications", icon: HiOutlineBriefcase, to: "/applications", enabled: true },
   { label: "Companies", icon: HiOutlineOfficeBuilding, to: "/companies", enabled: true },
-  { label: "Interviews", icon: HiOutlineVideoCamera, enabled: false },
+  { label: "Interviews", icon: HiOutlineVideoCamera, to: "/interviews", enabled: true },
   { label: "Calendar", icon: HiOutlineCalendar, enabled: false },
   { label: "Analytics", icon: HiOutlineChartBar, enabled: false },
   { label: "Resumes", icon: HiOutlineDocumentText, to: "/resumes", enabled: true },
