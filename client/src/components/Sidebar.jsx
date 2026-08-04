@@ -4,10 +4,10 @@ import {
   HiOutlineBriefcase,
   HiOutlineOfficeBuilding,
   HiOutlineVideoCamera,
-  HiOutlineCalendar,
-  HiOutlineChartBar,
+  // HiOutlineCalendar,
+  // HiOutlineChartBar,
   HiOutlineDocumentText,
-  HiOutlineSparkles,
+  // HiOutlineSparkles,
   HiOutlineCog,
   HiOutlineLogout,
   HiLightningBolt,
@@ -22,10 +22,10 @@ const NAV_ITEMS = [
   { label: "Applications", icon: HiOutlineBriefcase, to: "/applications", enabled: true },
   { label: "Companies", icon: HiOutlineOfficeBuilding, to: "/companies", enabled: true },
   { label: "Interviews", icon: HiOutlineVideoCamera, to: "/interviews", enabled: true },
-  { label: "Calendar", icon: HiOutlineCalendar, enabled: false },
-  { label: "Analytics", icon: HiOutlineChartBar, enabled: false },
+  // { label: "Calendar", icon: HiOutlineCalendar, enabled: false },
+  // { label: "Analytics", icon: HiOutlineChartBar, enabled: false },
   { label: "Resumes", icon: HiOutlineDocumentText, to: "/resumes", enabled: true },
-  { label: "AI Assistant", icon: HiOutlineSparkles, enabled: false, badge: "PRO" },
+  // { label: "AI Assistant", icon: HiOutlineSparkles, enabled: false, badge: "PRO" },
   { label: "Settings", icon: HiOutlineCog, enabled: false },
 ];
 
@@ -33,7 +33,7 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col justify-between border-r border-slate-100 bg-white px-4 py-6">
+    <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col justify-between border-r border-slate-100 bg-white px-4 py-6">
       <div>
         <div className="mb-8 flex items-center gap-2.5 px-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600">
