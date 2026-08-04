@@ -1,5 +1,6 @@
 const Company = require("../models/Company.model");
 const JobApplication = require("../models/JobApplication.model");
+const Interview = require("../models/Interview.model");
 const ApiError = require("../utils/ApiError");
 const { TERMINAL_STATUSES } = require("../constants/application.constants");
 
@@ -103,24 +104,31 @@ function buildCompanyApplicationsFilter(userId, company) {
 }
 
 // Shared math for a single company's metrics, given the (already filtered)
-// applications belonging to it.
+// applications belonging to it, and the number of real Interview records
+// (from the Interviews collection, Phase 5) tied to those applications.
 //
-// Known limitation: `interviews` is a proxy metric (count of applications
-// with an interviewDate set), since granular interview-round tracking
-// belongs to the Interview model introduced in Phase 5, which doesn't exist
-// yet. This will be replaced with a real per-round count once Phase 5 lands.
-function summarizeApplications(applications) {
+// `interviews` used to be a proxy metric (count of applications with an
+// interviewDate set) because the Interview model didn't exist yet. Now that
+// it does, callers pass in the actual count so this stays a true "how many
+// interview rounds" figure rather than "how many applications reached the
+// interview stage at least once".
+function summarizeApplications(applications, interviewCount = 0) {
   const totalApplications = applications.length;
   const activeApplications = applications.filter(
     (app) => !TERMINAL_STATUSES.includes(app.status)
   ).length;
-  const interviews = applications.filter((app) => Boolean(app.interviewDate)).length;
   const offers = applications.filter(
     (app) => app.status === "Offer" || app.status === "Accepted"
   ).length;
   const rejections = applications.filter((app) => app.status === "Rejected").length;
 
-  return { totalApplications, activeApplications, interviews, offers, rejections };
+  return {
+    totalApplications,
+    activeApplications,
+    interviews: interviewCount,
+    offers,
+    rejections,
+  };
 }
 
 async function getCompanyStats(userId, id) {
@@ -128,7 +136,12 @@ async function getCompanyStats(userId, id) {
   const filter = buildCompanyApplicationsFilter(userId, company);
   const applications = await JobApplication.find(filter);
 
-  const stats = summarizeApplications(applications);
+  const applicationIds = applications.map((app) => app._id);
+  const interviewCount = applicationIds.length
+    ? await Interview.countDocuments({ userId, applicationId: { $in: applicationIds } })
+    : 0;
+
+  const stats = summarizeApplications(applications, interviewCount);
 
   let lastActivityAt = company.updatedAt;
   for (const app of applications) {
@@ -178,10 +191,20 @@ async function listCompanies(userId, query) {
 
   // One query for all of this user's active applications, then bucketed
   // per company in memory — far cheaper than N+1 queries per row, and
-  // plenty fast at MVP scale (a single user's application count).
+  // plenty fast at MVP scale (a single user's application count). Same
+  // approach for interviews: one query for all of the user's Interview
+  // records, reduced into a per-application count map, then summed per
+  // company alongside its matched applications.
   const allApplications = await JobApplication.find({ userId, archived: false }).select(
     "company companyId status interviewDate updatedAt"
   );
+
+  const allInterviews = await Interview.find({ userId }).select("applicationId");
+  const interviewCountByApplication = allInterviews.reduce((map, interview) => {
+    const key = String(interview.applicationId);
+    map[key] = (map[key] || 0) + 1;
+    return map;
+  }, {});
 
   const companiesWithStats = companies.map((company) => {
     const matched = allApplications.filter(
@@ -189,7 +212,11 @@ async function listCompanies(userId, query) {
         (app.companyId && String(app.companyId) === String(company._id)) ||
         (!app.companyId && app.company.trim().toLowerCase() === company.name.trim().toLowerCase())
     );
-    const stats = summarizeApplications(matched);
+    const interviewCount = matched.reduce(
+      (sum, app) => sum + (interviewCountByApplication[String(app._id)] || 0),
+      0
+    );
+    const stats = summarizeApplications(matched, interviewCount);
     let lastActivityAt = company.updatedAt;
     for (const app of matched) {
       if (app.updatedAt > lastActivityAt) lastActivityAt = app.updatedAt;
@@ -209,14 +236,16 @@ async function listCompanies(userId, query) {
 }
 
 // Aggregate figures for the Companies list page's summary cards (Total
-// companies, Active applications, Interviews, Offers) — same proxy-metric
-// caveat as summarizeApplications() above applies to `interviews`.
+// companies, Active applications, Interviews, Offers). `interviews` is a
+// real count of Interview records tied to linked applications (see
+// summarizeApplications() above).
 async function getOverallStats(userId) {
-  const [companies, applications] = await Promise.all([
+  const [companies, applications, interviews] = await Promise.all([
     Company.find({ userId }).select("name"),
     JobApplication.find({ userId, archived: false }).select(
       "company companyId status interviewDate"
     ),
+    Interview.find({ userId }).select("applicationId"),
   ]);
 
   const companyIds = new Set(companies.map((c) => String(c._id)));
@@ -229,8 +258,13 @@ async function getOverallStats(userId) {
     if (app.companyId) return companyIds.has(String(app.companyId));
     return companyNames.has(app.company.trim().toLowerCase());
   });
+  const linkedApplicationIds = new Set(linkedApplications.map((app) => String(app._id)));
 
-  const stats = summarizeApplications(linkedApplications);
+  const interviewCount = interviews.filter((interview) =>
+    linkedApplicationIds.has(String(interview.applicationId))
+  ).length;
+
+  const stats = summarizeApplications(linkedApplications, interviewCount);
 
   return {
     totalCompanies: companies.length,

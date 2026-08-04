@@ -152,7 +152,18 @@ Stores interview rounds for a job application. **Implemented in Phase 5.**
 
 Deleting a Job Application **cascade-deletes** its Interviews (unlike Company deletion, which only unlinks — see Job Applications above): an interview round has no meaning independent of the application it belongs to.
 
-Now that Interviews exist, `jobApplications.interviewDate` is retained purely for backward compatibility with Phases 1–4 and is no longer the source of truth for interview counts/statistics — Company statistics and similar aggregates should prefer the Interviews collection going forward, though existing proxy-based aggregates from earlier phases haven't been retroactively migrated in this phase.
+Now that Interviews exist, `jobApplications.interviewDate` is retained purely for backward compatibility with Phases 1–4 and is no longer the source of truth for interview counts/statistics. Company statistics (`company.service.js`'s `getCompanyStats`, `listCompanies`, `getOverallStats`) now query the Interviews collection directly for their `interviews` figure instead of the earlier interviewDate-boolean proxy.
+
+**Application ↔ Interview sync.** Creating, updating, or deleting an Interview keeps its parent Job Application's `status` and `interviewDate` in sync (`interview.service.js`'s `applyInterviewOutcome` / `resyncApplicationFromRemainingInterviews`):
+
+| Interview `status` | Effect on the Job Application |
+|---|---|
+| `Scheduled`, `Rescheduled` | `status` → `Interview`; `interviewDate` set to the interview's date/time |
+| `Failed` | `status` → `Rejected` |
+| `Passed` | `status` → `Offer` if `round` is `Offer Call` (the final round); otherwise stays `Interview` (a further round is pending — the application model has no more granular in-between state) |
+| `Completed`, `Cancelled` | No change — attended-but-pending and cancelled interviews don't map to a clear application outcome |
+
+Deleting an Interview (or moving it to a different application) recomputes the affected application(s) from whichever Interview records remain: the most recently-scheduled remaining interview drives the recomputed status/date, or, if none remain, `interviewDate` is cleared and `status` steps back to `Applied` (only if it was `Interview` — an application already moved to Offer/Accepted/Rejected is left alone).
 
 ---
 

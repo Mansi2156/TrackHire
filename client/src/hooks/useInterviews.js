@@ -14,6 +14,16 @@ const INTERVIEWS_KEY = "interviews";
 const INTERVIEW_STATS_KEY = "interview-stats";
 const APPLICATION_INTERVIEWS_KEY = "application-interviews";
 
+// Keep Company and Application pages synchronized whenever interviews
+// change — the backend auto-updates the linked application's status/
+// interviewDate (see interview.service.js's syncApplicationFromInterview)
+// and the company list's interview counts derive from the Interviews
+// collection too, so both caches need to be invalidated alongside the
+// interview caches themselves.
+const COMPANIES_KEY = "companies";
+const COMPANY_STATS_KEY = "company-stats";
+const APPLICATIONS_KEY = "applications";
+
 export function useInterviewsQuery(params) {
   return useQuery({
     queryKey: [INTERVIEWS_KEY, params],
@@ -58,6 +68,9 @@ function useInvalidateInterviews() {
     queryClient.invalidateQueries({ queryKey: [INTERVIEWS_KEY] });
     queryClient.invalidateQueries({ queryKey: [INTERVIEW_STATS_KEY] });
     queryClient.invalidateQueries({ queryKey: [APPLICATION_INTERVIEWS_KEY] });
+    queryClient.invalidateQueries({ queryKey: [COMPANIES_KEY] });
+    queryClient.invalidateQueries({ queryKey: [COMPANY_STATS_KEY] });
+    queryClient.invalidateQueries({ queryKey: [APPLICATIONS_KEY] });
     if (id) {
       queryClient.invalidateQueries({ queryKey: [INTERVIEWS_KEY, id] });
     }

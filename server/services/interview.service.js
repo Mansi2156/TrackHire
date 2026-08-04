@@ -44,10 +44,89 @@ async function assertApplicationOwnership(userId, applicationId) {
   return application;
 }
 
+// Maps an interview's outcome onto its parent application. Only the
+// Interview `status` values that represent an actual scheduling event or a
+// definite result drive an application change — "Completed" (attended,
+// verdict pending) and "Cancelled" don't map onto a clear application
+// outcome, so they intentionally leave the application's current status
+// untouched rather than guessing.
+function applyInterviewOutcome(application, interview) {
+  switch (interview.status) {
+    // Still on the calendar (or moved to a new time) — the application is
+    // actively in its interview stage, and the application's
+    // "Interview Date" is kept in sync with this interview's date/time.
+    case "Scheduled":
+    case "Rescheduled":
+      application.status = "Interview";
+      application.interviewDate = interview.interviewDate;
+      break;
+
+    case "Failed":
+      application.status = "Rejected";
+      break;
+
+    // Passing a round means the process continues. `application.status`
+    // (per docs/DATABASE_DESIGN.md / application.constants.js) has no
+    // granular "which round" state beyond "Interview", so passing any
+    // round other than the final one just confirms the application stays
+    // at "Interview" (the next round is pending). Passing the final round
+    // ("Offer Call") means the offer was extended, so the application
+    // moves to "Offer".
+    case "Passed":
+      application.status = interview.round === "Offer Call" ? "Offer" : "Interview";
+      break;
+
+    default:
+      break;
+  }
+}
+
+async function syncApplicationFromInterview(applicationId, interview) {
+  const application = await JobApplication.findById(applicationId);
+  if (!application) return;
+
+  applyInterviewOutcome(application, interview);
+  await application.save();
+}
+
+// Recomputes an application's status/interviewDate from whatever interviews
+// still exist for it — used after an interview is deleted, or moved to a
+// different application, so the application never keeps stale state from an
+// interview that no longer belongs to it.
+async function resyncApplicationFromRemainingInterviews(userId, applicationId) {
+  const application = await JobApplication.findById(applicationId);
+  if (!application) return;
+
+  const remaining = await Interview.find({ userId, applicationId }).sort({
+    interviewDate: -1,
+  });
+
+  if (remaining.length === 0) {
+    application.interviewDate = null;
+    // Only step back to "Applied" if the status was actually
+    // interview-driven — an application the user has since moved to
+    // Offer/Accepted/Rejected shouldn't be silently reverted just because
+    // its last interview record was removed.
+    if (application.status === "Interview") {
+      application.status = "Applied";
+    }
+    await application.save();
+    return;
+  }
+
+  // The most recently-scheduled remaining interview is the best signal for
+  // the application's current status/date.
+  applyInterviewOutcome(application, remaining[0]);
+  await application.save();
+}
+
 async function createInterview(userId, payload) {
   const data = pickWritableFields(payload);
   await assertApplicationOwnership(userId, data.applicationId);
   const interview = await Interview.create({ ...data, userId });
+
+  await syncApplicationFromInterview(interview.applicationId, interview);
+
   return interview;
 }
 
@@ -67,8 +146,20 @@ async function updateInterview(userId, id, payload) {
   if (data.applicationId) {
     await assertApplicationOwnership(userId, data.applicationId);
   }
+  const previousApplicationId = interview.applicationId;
+
   Object.assign(interview, data);
   await interview.save();
+
+  await syncApplicationFromInterview(interview.applicationId, interview);
+
+  // Interview was moved to a different application — the old application
+  // no longer has it, so resync that one too from whatever interviews (if
+  // any) still remain on it.
+  if (data.applicationId && String(data.applicationId) !== String(previousApplicationId)) {
+    await resyncApplicationFromRemainingInterviews(userId, previousApplicationId);
+  }
+
   return interview;
 }
 
@@ -77,6 +168,9 @@ async function deleteInterview(userId, id) {
   if (!interview) {
     throw new ApiError(404, "Interview not found");
   }
+
+  await resyncApplicationFromRemainingInterviews(userId, interview.applicationId);
+
   return interview;
 }
 
@@ -86,6 +180,9 @@ async function updateStatus(userId, id, status) {
   const interview = await getOwnedInterview(userId, id);
   interview.status = status;
   await interview.save();
+
+  await syncApplicationFromInterview(interview.applicationId, interview);
+
   return interview;
 }
 
