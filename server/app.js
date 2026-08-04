@@ -7,6 +7,7 @@ const applicationRoutes = require("./routes/application.routes");
 const resumeRoutes = require("./routes/resume.routes");
 const companyRoutes = require("./routes/company.routes");
 const interviewRoutes = require("./routes/interview.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
 const notFound = require("./middleware/notFound.middleware");
 const errorHandler = require("./middleware/error.middleware");
 
@@ -37,6 +38,7 @@ app.use("/api/applications", applicationRoutes);
 app.use("/api/resumes", resumeRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/interviews", interviewRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // 404 + centralized error handling (must be last)
 app.use(notFound);
