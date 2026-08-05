@@ -19,7 +19,10 @@ async function registerUser({ fullName, email, password }) {
 // failure so we don't reveal whether the email or password was wrong.
 async function loginUser({ email, password }) {
   const user = await User.findOne({ email }).select("+password");
-  if (!user) {
+  // Soft-deleted accounts (Settings > Danger Zone) can no longer log back
+  // in — treated the same as a wrong email so we don't reveal the account
+  // ever existed.
+  if (!user || user.isDeleted) {
     throw new ApiError(401, "Invalid email or password");
   }
 

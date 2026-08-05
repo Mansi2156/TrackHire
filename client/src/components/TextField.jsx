@@ -20,7 +20,9 @@ const TextField = forwardRef(function TextField(
             error
               ? "border-red-400 focus:border-red-500"
               : "border-slate-200 focus:border-brand-500"
-          } ${rightElement ? "pr-10" : ""}`}
+          } ${rightElement ? "pr-10" : ""} ${
+            rest.disabled ? "cursor-not-allowed bg-slate-50 text-slate-500" : ""
+          }`}
           {...rest}
         />
         {rightElement && (

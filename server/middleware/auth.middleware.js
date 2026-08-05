@@ -24,7 +24,11 @@ const protect = asyncHandler(async (req, _res, next) => {
   }
 
   const user = await User.findById(decoded.id);
-  if (!user) {
+  // A soft-deleted account (Settings > Danger Zone) is treated exactly like
+  // a nonexistent one here — this is what actually "invalidates" the JWT
+  // for a stateless auth setup: the token itself still verifies, but every
+  // subsequent request is rejected from this point on.
+  if (!user || user.isDeleted) {
     throw new ApiError(401, "Not authorized, user no longer exists");
   }
 

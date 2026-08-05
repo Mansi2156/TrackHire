@@ -26,7 +26,7 @@ const NAV_ITEMS = [
   // { label: "Analytics", icon: HiOutlineChartBar, enabled: false },
   { label: "Resumes", icon: HiOutlineDocumentText, to: "/resumes", enabled: true },
   // { label: "AI Assistant", icon: HiOutlineSparkles, enabled: false, badge: "PRO" },
-  { label: "Settings", icon: HiOutlineCog, enabled: false },
+  { label: "Settings", icon: HiOutlineCog, to: "/settings", enabled: true },
 ];
 
 export default function Sidebar() {

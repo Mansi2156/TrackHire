@@ -28,6 +28,55 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // Settings module additions (Profile tab) — not in the original field
+    // list in docs/DATABASE_DESIGN.md, added here per the "update this
+    // document first" rule. All optional; shown on the Settings > Profile
+    // form alongside fullName/email.
+    jobTitle: {
+      type: String,
+      trim: true,
+      maxlength: [100, "Job title cannot exceed 100 characters"],
+      default: "",
+    },
+    location: {
+      type: String,
+      trim: true,
+      maxlength: [200, "Location cannot exceed 200 characters"],
+      default: "",
+    },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: [500, "Bio cannot exceed 500 characters"],
+      default: "",
+    },
+    // Settings module addition (Reminders tab) — in-app reminder
+    // preferences only (no email reminders, out of MVP scope).
+    reminders: {
+      interviewReminderDays: {
+        type: Number,
+        enum: [0, 1, 2, 3], // 0 = same day
+        default: 1,
+      },
+      followUpReminderDays: {
+        type: Number,
+        min: [1, "Follow-up reminder must be at least 1 day"],
+        max: [60, "Follow-up reminder cannot exceed 60 days"],
+        default: 7,
+      },
+    },
+    // Settings module addition (Danger Zone) — soft delete. The user
+    // document is kept (not removed) so related records (applications,
+    // resumes, companies, interviews) never dangle; access is instead
+    // blocked at the auth middleware for any user with isDeleted: true.
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

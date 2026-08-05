@@ -46,16 +46,25 @@ User (1)
 
 ### Users
 
-Stores authentication and user profile.
+Stores authentication, profile, and account preferences.
 
-| Field |
-|-------|
-| fullName |
-| email |
-| password |
-| avatar |
-| createdAt |
-| updatedAt |
+| Field | Notes |
+|-------|-------|
+| fullName | |
+| email | Unique. Read-only from Settings — never editable after registration |
+| password | bcrypt-hashed, hidden by default |
+| avatar | Optional. Not currently editable from the UI (Settings > Profile intentionally has no avatar upload) |
+| jobTitle | Optional. Settings > Profile addition — added here per the "update this document first" rule |
+| location | Optional. Settings > Profile addition |
+| bio | Optional, max 500 chars. Settings > Profile addition |
+| reminders.interviewReminderDays | One of `0, 1, 2, 3` (days before an interview; `0` = same day). In-app only — no email reminders in the MVP. Settings > Reminders addition |
+| reminders.followUpReminderDays | Integer, 1–60. How many days after applying to be reminded to follow up. Settings > Reminders addition |
+| isDeleted | Boolean, default `false`. Settings > Danger Zone addition — see "Account Deletion" below |
+| deletedAt | Date, default `null`. Set alongside `isDeleted` |
+| createdAt | |
+| updatedAt | |
+
+**Account deletion (Settings > Danger Zone) is a soft delete, not a hard delete.** The user document is kept — never removed — so related records (Job Applications, Resumes, Companies, Interviews) never dangle, consistent with this document's own "deleting a parent record must never break related records" principle. Instead, `isDeleted: true` makes the account immediately and permanently unreachable: `auth.service.js`'s login treats `isDeleted: true` the same as "no such user," and `auth.middleware.js`'s `protect` middleware rejects any request from a token belonging to a soft-deleted user, even if the JWT itself hasn't expired. This is what "invalidates the session/JWT" in a stateless-JWT setup that has no server-side revocation list.
 
 ---
 
@@ -217,8 +226,17 @@ activityLogs
 savedSearches
 emailTemplates
 aiSuggestions
-userSettings
 ```
+
+`userSettings` was originally listed here as a future collection but is
+**implemented** — as fields embedded directly on the `Users` document
+(`jobTitle`, `location`, `bio`, `reminders.*`, `isDeleted`, `deletedAt`;
+see the Users section above), not as a separate collection. A separate
+`userSettings` collection was considered and rejected: these fields have
+no identity or behavior of their own outside the user they describe, are
+always read/written together with the user record, and stay well within
+a single small document — the same reasoning already applied to `Resume`
+tags in this document.
 
 ---
 

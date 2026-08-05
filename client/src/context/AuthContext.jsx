@@ -53,6 +53,14 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Lets Settings (Profile / Reminders) sync the freshly saved user object
+  // — returned by the API on each update — into context, so the sidebar
+  // and any other consumer reflect the change immediately without a
+  // separate refetch.
+  const updateUser = useCallback((nextUser) => {
+    setUser((prev) => ({ ...prev, ...nextUser }));
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -61,8 +69,9 @@ export function AuthProvider({ children }) {
       login,
       register,
       logout,
+      updateUser,
     }),
-    [user, isLoading, login, register, logout]
+    [user, isLoading, login, register, logout, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

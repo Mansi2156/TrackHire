@@ -148,6 +148,18 @@ export const INTERVIEW_STATUS_STYLES = {
   Rescheduled: "bg-amber-50 text-amber-700 border border-amber-200",
 };
 
+// Settings > Reminders > "Remind before interview" — mirrors
+// server/constants/user.constants.js.
+export const INTERVIEW_REMINDER_OPTIONS = [
+  { value: 0, label: "Same day" },
+  { value: 1, label: "1 day before" },
+  { value: 2, label: "2 days before" },
+  { value: 3, label: "3 days before" },
+];
+
+export const MIN_FOLLOW_UP_REMINDER_DAYS = 1;
+export const MAX_FOLLOW_UP_REMINDER_DAYS = 60;
+
 // Emoji per interview type, matching the Figma's inline type icons.
 export const INTERVIEW_TYPE_ICONS = {
   Technical: "💻",

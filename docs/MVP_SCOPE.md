@@ -287,3 +287,34 @@ Follow industry-standard development practices.
 * Before implementing a new phase, inspect the existing codebase and integrate with the current architecture instead of duplicating functionality.
 
 The project should be developed one phase at a time. Complete and verify the current phase before moving to the next phase.
+
+---
+
+# Additional Module — Account Settings (Implemented Outside the Original 8-Phase Plan)
+
+Implemented on explicit request, after Phase 5 (Interview Management) and
+ahead of Phase 6. Not part of the original phase list above; documented
+here per the project's own rule of keeping `docs/MVP_SCOPE.md` in sync
+with what's actually built. Full detail is in
+`PROJECT_IMPLEMENTATION_GUIDE.md`'s Settings Module section.
+
+* Profile management — Full Name, Job Title, Location, Bio (Email is
+  read-only, never editable)
+* Change Password — reuses the exact validation and error messages
+  already established by the Authentication module (Phase 1)
+* Reminder preferences — **in-app only**, matching this document's rule
+  against implementing email reminders in the MVP:
+  * Interview reminder lead time (same day / 1 / 2 / 3 days before)
+  * Follow-up reminder (configurable number of days after applying)
+* Danger Zone — Delete Account (soft delete, with a confirmation modal):
+  the account becomes immediately unreachable (login and every protected
+  route reject it), the user is logged out client-side, and related
+  records (applications, resumes, companies, interviews) are kept
+  intact rather than deleted
+
+**Explicitly out of scope for this module**, consistent with this
+document's "Do not implement AI features, advanced notifications, email
+reminders, or other future modules" rule: email-based reminders,
+notification preferences, an appearance/theme setting, and avatar
+upload/change (all present in the Figma mock, intentionally excluded per
+the module's own request).

@@ -20,6 +20,7 @@ import Interviews from "./pages/Interviews";
 import ScheduleInterview from "./pages/ScheduleInterview";
 import EditInterview from "./pages/EditInterview";
 import InterviewDetails from "./pages/InterviewDetails";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="/interviews/new" element={<ScheduleInterview />} />
             <Route path="/interviews/:id" element={<InterviewDetails />} />
             <Route path="/interviews/:id/edit" element={<EditInterview />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>
 
