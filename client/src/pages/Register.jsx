@@ -13,11 +13,11 @@ import { useAuth } from "../hooks/useAuth";
 
 const STATS = [
   {
-    value: "50K+",
+    value: "5K+",
     label: "Job seekers",
   },
   {
-    value: "2.4M",
+    value: "2.4K",
     label: "Apps tracked",
   },
   {
@@ -62,13 +62,20 @@ function RegisterPanel() {
 
       {/* Logo */}
 
-      <div className="relative flex items-center gap-2.5">
+      <div className="relative flex items-center gap-2">
 
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+        {/* <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
           <Zap
             size={18}
             className="text-white"
             fill="white"
+          />
+        </div> */}
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg">
+          <img
+            src="/trackhire_logo_white1.png"
+            alt="TrackHire Logo"
+            className="h-full w-full object-contain"
           />
         </div>
 
@@ -198,13 +205,20 @@ export default function Register() {
 
       {/* Mobile Logo */}
 
-      <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+      <div className="mb-8 flex items-center gap-2 lg:hidden">
 
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
+        {/* <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
           <Zap
             size={16}
             className="text-white"
             fill="white"
+          />
+        </div> */}
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg">
+          <img
+            src="/trackhire_logo.png"
+            alt="TrackHire Logo"
+            className="h-full w-full object-contain"
           />
         </div>
 

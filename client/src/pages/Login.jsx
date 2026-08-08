@@ -61,12 +61,19 @@ function LoginPanel() {
 
       {/* Logo */}
 
-      <div className="relative flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+      <div className="relative flex items-center gap-2">
+        {/* <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
           <Zap
             size={18}
             className="text-white"
             fill="white"
+          />
+        </div> */}
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg">
+          <img
+            src="/trackhire_logo_white1.png"
+            alt="TrackHire Logo"
+            className="h-full w-full object-contain"
           />
         </div>
 
@@ -124,12 +131,11 @@ function LoginPanel() {
       <div className="relative">
 
         <h2 className="mb-3 text-3xl font-bold leading-tight">
-          Track every job application in one place
+          Track smarter. Stay organized. Get hired faster.
         </h2>
 
         <p className="text-sm leading-relaxed text-indigo-200">
-          AI-powered insights to help you land your dream job faster.
-          Never miss a follow-up again.
+          Manage every step of your job search in one place.
         </p>
 
       </div>
@@ -172,12 +178,19 @@ export default function Login() {
     <AuthLayout panel={<LoginPanel />}>
       {/* Mobile Logo */}
 
-      <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
+      <div className="mb-8 flex items-center gap-2 lg:hidden">
+        {/* <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
           <Zap
             size={16}
             className="text-white"
             fill="white"
+          />
+        </div> */}
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg">
+          <img
+            src="/trackhire_logo.png"
+            alt="TrackHire Logo"
+            className="h-full w-full object-contain"
           />
         </div>
 
@@ -211,7 +224,7 @@ export default function Login() {
 
         {/* Google */}
 
-        <button
+        {/* <button
           type="button"
           className="flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50"
         >
@@ -239,16 +252,12 @@ export default function Login() {
           </svg>
 
           Continue with Google
-        </button>
+        </button> */}
 
         {/* Divider */}
 
         <div className="relative flex items-center">
           <div className="flex-1 border-t border-slate-200" />
-
-          <span className="bg-white px-3 text-xs text-slate-400">
-            or continue with email
-          </span>
 
           <div className="flex-1 border-t border-slate-200" />
         </div>
@@ -312,7 +321,7 @@ export default function Login() {
             {...register("rememberMe")}
           />
 
-          Remember me for 30 days
+          Remember me
         </label>
 
         {/* Submit */}

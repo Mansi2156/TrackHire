@@ -35,11 +35,19 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col justify-between border-r border-slate-100 bg-white px-4 py-6">
       <div>
-        <div className="mb-8 flex items-center gap-2.5 px-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600">
-            <HiLightningBolt className="h-5 w-5 text-white" />
+        <div className="mb-8 flex items-center gap-1.5 px-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl">
+            <img
+              src="/trackhire_logo.png"
+              alt="TrackHire Logo"
+              className="h-9 w-9 object-contain"
+            />
+          </div>
+
+          <span className="text-2xl font-bold">
+            <span className="text-slate-900">Track</span>
+            <span className="text-[#4b32c4]">Hire</span>
           </span>
-          <span className="text-lg font-bold text-slate-900">TrackHire</span>
         </div>
 
         <nav className="space-y-1">
