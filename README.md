@@ -6,7 +6,17 @@ Job searches at scale (dozens or hundreds of applications) outgrow what Excel, S
 
 **Repository:** [github.com/Mansi2156/TrackHire](https://github.com/Mansi2156/TrackHire)
 
-**Live Demo:** _add deployed link here_
+**Live Demo:** [TrackHire](https://track-hire-nine.vercel.app)
+
+**Demo Account:**  
+- **Email:** `johndoe123@gmail.com`
+- **Password:** `Test@123#`
+
+---
+
+## Documentation
+
+📄 [View Project Documentation](docs/Trackhire_Project_Documentation.pdf)
 
 ---
 
