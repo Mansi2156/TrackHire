@@ -97,7 +97,8 @@ Stores uploaded resume versions.
 | userId | Reference → Users |
 | title | Resume name (e.g. React Developer Resume) |
 | fileName | Original file name |
-| fileUrl | Storage path / URL |
+| fileUrl | Storage path (development) or Cloudinary `secure_url` (production) |
+| filePublicId | Optional, default `null`. Cloudinary asset id, set only when the file is stored in Cloudinary (production). `null` for resumes stored on local disk (development). Required to delete/replace the file via `cloudinary.uploader.destroy` — the URL alone isn't enough. Storage-strategy addition — added here per the "update this document first" rule |
 | version | v1, v2, v3... |
 | isDefault | Boolean |
 | fileSize |
@@ -107,6 +108,8 @@ Stores uploaded resume versions.
 | updatedAt | |
 
 Kept as a simple embedded array on the Resume document rather than a separate `tags` collection — tags have no identity or behavior of their own outside the resume they describe, and are always read/written together with it, so a dedicated collection would only add a join for no practical benefit at this scale.
+
+**Storage strategy.** Resume files are stored on local disk in development and in Cloudinary (`resource_type: "raw"`, folder `trackhire/resumes/{userId}/`) in production, selected automatically by `NODE_ENV` (`server/utils/fileStorage.js`). Both `fileUrl` and `filePublicId` are written by the same module regardless of which backend is active, so `resume.service.js` and `resume.controller.js` never branch on storage provider themselves. Downloads and previews are proxied through the backend (not redirected to Cloudinary directly) so the app can keep serving files under its own `fileName` and `Content-Disposition` headers.
 
 ---
 

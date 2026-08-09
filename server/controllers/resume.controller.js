@@ -1,8 +1,7 @@
-const fs = require("fs");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 const resumeService = require("../services/resume.service");
-const { resolveAbsolutePath } = require("../utils/fileStorage");
+const { getResumeFileStream } = require("../utils/fileStorage");
 
 // POST /api/resumes
 const uploadResume = asyncHandler(async (req, res) => {
@@ -84,31 +83,35 @@ const setDefaultResume = asyncHandler(async (req, res) => {
   });
 });
 
-// Shared by download/preview: resolves the owned resume to an on-disk path,
-// verifying the file still exists before streaming it.
-async function resolveOwnedFilePath(userId, id) {
+// Shared by download/preview: resolves the owned resume and opens a
+// readable stream to its file — local disk in development, proxied from
+// Cloudinary in production (see utils/fileStorage.js) — verifying the file
+// still exists before streaming it.
+async function resolveOwnedFileStream(userId, id) {
   const resume = await resumeService.getOwnedResume(userId, id);
-  const absolutePath = resolveAbsolutePath(resume.fileUrl);
-  if (!fs.existsSync(absolutePath)) {
+  const stream = await getResumeFileStream(resume);
+  if (!stream) {
     throw new ApiError(404, "Resume file is missing from storage");
   }
-  return { resume, absolutePath };
+  return { resume, stream };
 }
 
 // GET /api/resumes/:id/download
 const downloadResume = asyncHandler(async (req, res) => {
-  const { resume, absolutePath } = await resolveOwnedFilePath(req.user._id, req.params.id);
-  res.download(absolutePath, resume.fileName);
+  const { resume, stream } = await resolveOwnedFileStream(req.user._id, req.params.id);
+  res.setHeader("Content-Type", resume.mimeType);
+  res.setHeader("Content-Disposition", `attachment; filename="${resume.fileName}"`);
+  stream.pipe(res);
 });
 
 // GET /api/resumes/:id/preview
 // Streamed inline (not as an attachment) so the frontend can load it into
 // a blob URL and render it in the in-page preview modal.
 const previewResume = asyncHandler(async (req, res) => {
-  const { resume, absolutePath } = await resolveOwnedFilePath(req.user._id, req.params.id);
+  const { resume, stream } = await resolveOwnedFileStream(req.user._id, req.params.id);
   res.setHeader("Content-Type", resume.mimeType);
   res.setHeader("Content-Disposition", `inline; filename="${resume.fileName}"`);
-  fs.createReadStream(absolutePath).pipe(res);
+  stream.pipe(res);
 });
 
 module.exports = {

@@ -23,6 +23,14 @@ const resumeSchema = new mongoose.Schema(
       type: String,
       required: [true, "File URL is required"],
     },
+    // Cloudinary asset identifier, required to delete/replace the file in
+    // production (see utils/fileStorage.js — cloudinary.uploader.destroy
+    // needs the exact public_id, not just the URL). Null for resumes
+    // stored on local disk in development, which are deleted by path alone.
+    filePublicId: {
+      type: String,
+      default: null,
+    },
     // Free-form version label (e.g. "v1", "v2"). Auto-computed per
     // user+title on upload, but can be overridden on rename — see
     // resume.service.js `computeNextVersion`.

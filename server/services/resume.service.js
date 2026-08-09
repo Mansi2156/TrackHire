@@ -91,13 +91,14 @@ async function uploadResume(userId, file, payload = {}) {
   const makeDefault = await isFirstResumeForUser(userId);
   const tags = normalizeTags(payload.tags) || [];
 
-  const fileUrl = saveResumeFile(userId, file);
+  const { fileUrl, filePublicId } = await saveResumeFile(userId, file);
 
   const resume = await Resume.create({
     userId,
     title,
     fileName: file.originalname,
     fileUrl,
+    filePublicId,
     version,
     fileSize: file.size,
     mimeType: file.mimetype,
@@ -165,18 +166,20 @@ async function updateResumeTags(userId, id, rawTags) {
 async function replaceResumeFile(userId, id, file) {
   const resume = await getOwnedResume(userId, id);
   const previousFileUrl = resume.fileUrl;
+  const previousFilePublicId = resume.filePublicId;
 
-  const fileUrl = saveResumeFile(userId, file);
+  const { fileUrl, filePublicId } = await saveResumeFile(userId, file);
   const version = await computeNextVersion(userId, resume.title);
 
   resume.fileUrl = fileUrl;
+  resume.filePublicId = filePublicId;
   resume.fileName = file.originalname;
   resume.fileSize = file.size;
   resume.mimeType = file.mimetype;
   resume.version = version;
   await resume.save();
 
-  deleteResumeFile(previousFileUrl);
+  await deleteResumeFile(previousFileUrl, previousFilePublicId);
   return resume;
 }
 
@@ -187,7 +190,7 @@ async function deleteResume(userId, id) {
   if (!resume) {
     throw new ApiError(404, "Resume not found");
   }
-  deleteResumeFile(resume.fileUrl);
+  await deleteResumeFile(resume.fileUrl, resume.filePublicId);
   return resume;
 }
 
