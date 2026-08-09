@@ -2,6 +2,8 @@
 
 A full-stack MERN application for organizing a job search in one place — applications, interview stages, recruiter details, resume versions, and progress analytics — instead of a spreadsheet.
 
+Job searches at scale (dozens or hundreds of applications) outgrow what Excel, Sheets, or Notion can track cleanly. TrackHire centralizes that workflow with a status pipeline, interview history, and dashboard analytics computed from your actual application data.
+
 **Repository:** [github.com/Mansi2156/TrackHire](https://github.com/Mansi2156/TrackHire)
 **Live Demo:** _add deployed link here_
 
@@ -40,6 +42,7 @@ A full-stack MERN application for organizing a job search in one place — appli
 **Resume Manager**
 - Upload, replace, download, and preview resumes (PDF/DOCX)
 - Tagging, per-user default resume, and resume-level usage stats
+- Resumes are stored on local disk in development; production uses Cloudinary.
 
 **Companies**
 - Company profiles linked to applications, with search and per-company statistics
@@ -58,7 +61,7 @@ A full-stack MERN application for organizing a job search in one place — appli
 React 18 (Vite) · React Router DOM · Axios · TanStack Query · React Hook Form · Tailwind CSS · React Hot Toast · Recharts · React Icons / lucide-react
 
 **Backend**
-Node.js · Express.js · MongoDB (Mongoose) · JWT Authentication · bcryptjs · express-validator · Multer
+Node.js · Express.js · MongoDB (Mongoose) · JWT Authentication · bcryptjs · express-validator · Multer · Cloudinary
 
 **Database**
 MongoDB Atlas
@@ -94,7 +97,7 @@ TrackHire/
 │       ├── layouts/      # Auth / Dashboard shells
 │       └── pages/        # Route-level screens
 └── server/
-    ├── config/           # Env loading, DB connection
+    ├── config/           # Env loading, DB connection, Cloudinary
     ├── controllers/      # HTTP request/response handlers
     ├── services/         # Business logic
     ├── models/           # Mongoose schemas
@@ -110,6 +113,7 @@ TrackHire/
 ### Prerequisites
 - Node.js 18+
 - A MongoDB Atlas cluster (or local MongoDB instance)
+- A Cloudinary account (production only — resumes are stored on local disk in development)
 
 ### 1. Clone the repository
 ```bash
@@ -153,6 +157,11 @@ The app runs at `http://localhost:5173` (frontend) and `http://localhost:5000/ap
 | `NODE_ENV` | No | `development` or `production` |
 | `JWT_EXPIRES_IN` | No | Defaults to `7d` |
 | `CLIENT_URL` | No | Frontend origin, used for CORS |
+| `CLOUDINARY_CLOUD_NAME` | Yes, in production | Cloudinary account identifier |
+| `CLOUDINARY_API_KEY` | Yes, in production | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Yes, in production | Cloudinary API secret |
+
+Resume files are stored on local disk in development (no Cloudinary setup needed) and in Cloudinary in production, selected automatically by `NODE_ENV`. The server fails fast on startup if the Cloudinary variables are missing in production.
 
 **`client/.env`**
 
@@ -166,7 +175,6 @@ The app runs at `http://localhost:5173` (frontend) and `http://localhost:5000/ap
 
 ## Known Limitations
 
-- Resumes are currently stored on local server disk rather than cloud storage — file persistence isn't guaranteed across redeploys on ephemeral hosting.
 - No refresh-token flow; sessions expire after the configured JWT lifetime and require re-login.
 - "Forgot password" is not yet implemented.
 - Reminder preferences are in-app only (no email/push delivery).
@@ -178,7 +186,6 @@ The app runs at `http://localhost:5173` (frontend) and `http://localhost:5000/ap
 - AI-assisted resume matching and ATS scoring against job descriptions
 - Email and browser notifications for interviews and follow-ups
 - Calendar integration (Google/Outlook)
-- Cloud-based resume storage (Cloudinary)
 - Advanced analytics and historical trends
 
 ---
