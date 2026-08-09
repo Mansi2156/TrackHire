@@ -5,6 +5,7 @@ A full-stack MERN application for organizing a job search in one place — appli
 Job searches at scale (dozens or hundreds of applications) outgrow what Excel, Sheets, or Notion can track cleanly. TrackHire centralizes that workflow with a status pipeline, interview history, and dashboard analytics computed from your actual application data.
 
 **Repository:** [github.com/Mansi2156/TrackHire](https://github.com/Mansi2156/TrackHire)
+
 **Live Demo:** _add deployed link here_
 
 ---
@@ -57,14 +58,14 @@ Job searches at scale (dozens or hundreds of applications) outgrow what Excel, S
 
 ## Tech Stack
 
-**Frontend**
-React 18 (Vite) · React Router DOM · Axios · TanStack Query · React Hook Form · Tailwind CSS · React Hot Toast · Recharts · React Icons / lucide-react
+**Frontend:**
+    React 18 (Vite) · React Router DOM · Axios · TanStack Query · React Hook Form · Tailwind CSS · React Hot Toast · Recharts · React Icons / lucide-react
 
-**Backend**
-Node.js · Express.js · MongoDB (Mongoose) · JWT Authentication · bcryptjs · express-validator · Multer · Cloudinary
+**Backend:**
+    Node.js · Express.js · MongoDB (Mongoose) · JWT Authentication · bcryptjs · express-validator · Multer · Cloudinary
 
-**Database**
-MongoDB Atlas
+**Database:**
+    MongoDB Atlas
 
 ---
 
@@ -168,8 +169,6 @@ Resume files are stored on local disk in development (no Cloudinary setup needed
 | Variable | Required | Description |
 |---|---|---|
 | `VITE_API_URL` | Yes | Base URL of the backend API, e.g. `http://localhost:5000/api` |
-
-> The repo's `.gitignore` excludes env files entirely (including `.env.example`), so create these files manually using the tables above rather than copying a template.
 
 ---
 
