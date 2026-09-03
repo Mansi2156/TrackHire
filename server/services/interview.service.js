@@ -189,8 +189,69 @@ async function updateStatus(userId, id, status) {
 const SORT_MAP = {
   newest: { interviewDate: -1 },
   oldest: { interviewDate: 1 },
-  upcoming: { interviewDate: 1 },
 };
+
+// A generous separation between buckets so a bucket index can be combined
+// with a millisecond epoch timestamp into one sortable number without the
+// two ever overlapping.
+const BUCKET_SPAN = 1e15;
+
+// The Interviews page groups results into three sections — Upcoming,
+// Needs Update (overdue), Completed — see client/src/pages/Interviews.jsx.
+// A plain ascending/descending date sort doesn't match that grouping: it
+// sorts by absolute date only, so once a user has any overdue "Scheduled"
+// interviews (an older, smaller date), those sort ahead of a genuinely
+// upcoming one on page 1, silently pushing new upcoming interviews onto
+// page 2+ and making them look "missing". This computed rank instead
+// always orders: (1) upcoming, soonest first, (2) overdue/needs-update,
+// most recently overdue first, (3) everything else (completed/passed/
+// failed/cancelled), most recent first — matching the page's own grouping
+// regardless of how the pages are paginated.
+function buildUpcomingSortStages(now) {
+  return [
+    {
+      $addFields: {
+        _bucket: {
+          $switch: {
+            branches: [
+              {
+                case: {
+                  $and: [
+                    { $in: ["$status", ["Scheduled", "Rescheduled"]] },
+                    { $gte: ["$interviewDate", now] },
+                  ],
+                },
+                then: 0, // Upcoming
+              },
+              {
+                case: { $in: ["$status", ["Scheduled", "Rescheduled"]] },
+                then: 1, // Needs Update (overdue, still Scheduled/Rescheduled)
+              },
+            ],
+            default: 2, // Completed / Passed / Failed / Cancelled
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        _sortRank: {
+          $add: [
+            { $multiply: ["$_bucket", BUCKET_SPAN] },
+            {
+              $cond: [
+                { $eq: ["$_bucket", 0] },
+                { $toLong: { $ifNull: ["$interviewDate", new Date(0)] } },
+                { $multiply: [{ $toLong: { $ifNull: ["$interviewDate", new Date(0)] } }, -1] },
+              ],
+            },
+          ],
+        },
+      },
+    },
+    { $sort: { _sortRank: 1 } },
+  ];
+}
 
 // List interviews with server-side search/filter/sort/pagination, per
 // IMPLEMENTATION_RULES.md §9 ("do not fetch all records and filter/paginate
@@ -209,6 +270,7 @@ async function listInterviews(userId, query) {
     limit = 10,
   } = query;
 
+  const now = new Date();
   const match = { userId: new mongoose.Types.ObjectId(userId) };
 
   if (status) {
@@ -223,15 +285,14 @@ async function listInterviews(userId, query) {
     match.applicationId = new mongoose.Types.ObjectId(applicationId);
   }
   if (when === "upcoming") {
-    match.interviewDate = { $gte: new Date() };
+    match.interviewDate = { $gte: now };
   } else if (when === "past") {
-    match.interviewDate = { $lt: new Date() };
+    match.interviewDate = { $lt: now };
   }
 
   const pageNum = Math.max(1, Number(page) || 1);
   const limitNum = Math.min(100, Math.max(1, Number(limit) || 10));
   const skip = (pageNum - 1) * limitNum;
-  const sort = SORT_MAP[sortBy] || SORT_MAP.newest;
 
   const pipeline = [
     { $match: match },
@@ -253,8 +314,13 @@ async function listInterviews(userId, query) {
     });
   }
 
+  if (sortBy === "upcoming") {
+    pipeline.push(...buildUpcomingSortStages(now));
+  } else {
+    pipeline.push({ $sort: SORT_MAP[sortBy] || SORT_MAP.newest });
+  }
+
   pipeline.push(
-    { $sort: sort },
     {
       $facet: {
         data: [
@@ -303,9 +369,15 @@ async function listInterviews(userId, query) {
 // the user's interviews (not just the current filtered/paged view) — same
 // pattern as company.service.js's getOverallStats.
 async function getOverallStats(userId) {
-  const interviews = await Interview.find({ userId }).select("status");
+  const interviews = await Interview.find({ userId }).select("status interviewDate");
+  const now = new Date();
   return {
-    upcoming: interviews.filter((i) => i.status === "Scheduled").length,
+    // "Scheduled" only counts as Upcoming while its date/time hasn't passed
+    // yet — a Scheduled interview whose date has already gone by is stale
+    // (the user forgot to update it) and must not be reported as upcoming.
+    upcoming: interviews.filter(
+      (i) => i.status === "Scheduled" && i.interviewDate && i.interviewDate >= now
+    ).length,
     completed: interviews.filter((i) => i.status === "Completed").length,
     passed: interviews.filter((i) => i.status === "Passed").length,
     failed: interviews.filter((i) => i.status === "Failed").length,

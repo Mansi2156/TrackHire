@@ -13,6 +13,7 @@ import {
   HiOutlineLocationMarker,
   HiOutlineDesktopComputer,
   HiOutlineClock,
+  HiOutlineExclamation,
 } from "react-icons/hi";
 import StatusBadge from "../components/StatusBadge";
 import SelectField from "../components/SelectField";
@@ -101,14 +102,32 @@ export default function Interviews() {
     "Failed",
     "Cancelled",
   ];
+  const scheduledStatuses = ["Scheduled", "Rescheduled"];
+
+  // "Upcoming" must mean still on the calendar AND not yet in the past —
+  // a Scheduled/Rescheduled interview whose date has already gone by isn't
+  // upcoming, it's overdue (the user likely forgot to update its status).
+  // Bucketing by status alone (the previous behavior) showed already-past
+  // interviews under "Upcoming Interviews", which is the bug being fixed.
+  const now = new Date();
+  const isFutureOrToday = (iv) =>
+    iv.interviewDate && new Date(iv.interviewDate).getTime() >= now.getTime();
 
   const upcomingInterviews = interviews
-    .filter((iv) => !completedStatuses.includes(iv.status))
+    .filter((iv) => scheduledStatuses.includes(iv.status) && isFutureOrToday(iv))
+    .sort(
+      (a, b) =>
+        new Date(a.interviewDate).getTime() -
+        new Date(b.interviewDate).getTime()
+    ); // soonest first
+
+  const overdueInterviews = interviews
+    .filter((iv) => scheduledStatuses.includes(iv.status) && !isFutureOrToday(iv))
     .sort(
       (a, b) =>
         new Date(b.interviewDate).getTime() -
         new Date(a.interviewDate).getTime()
-    );
+    ); // most recently overdue first
 
   const completedInterviews = interviews
     .filter((iv) => completedStatuses.includes(iv.status))
@@ -206,32 +225,35 @@ export default function Interviews() {
     );
   };
 
-  const renderInterviewTable = (title, rows) => (
+  const SECTION_TONES = {
+    upcoming: { bar: "bg-blue-500", badge: "bg-blue-50 text-blue-600" },
+    overdue: { bar: "bg-amber-500", badge: "bg-amber-50 text-amber-600" },
+    completed: { bar: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-600" },
+  };
+
+  const renderInterviewTable = (title, rows, tone = "completed") => (
     <div className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-card">
       {/* Header */}
       <div className="flex items-center border-b border-slate-100 px-6 py-4">
         <div className="flex items-center gap-3">
-          <span
-            className={`h-6 w-1 rounded-full ${
-              title === "Upcoming Interviews"
-                ? "bg-blue-500"
-                : "bg-emerald-500"
-            }`}
-          />
+          <span className={`h-6 w-1 rounded-full ${SECTION_TONES[tone].bar}`} />
 
           <h3 className="text-lg font-semibold text-slate-900">
             {title}
           </h3>
 
           <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              title === "Upcoming Interviews"
-                ? "bg-blue-50 text-blue-600"
-                : "bg-emerald-50 text-emerald-600"
-            }`}
+            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${SECTION_TONES[tone].badge}`}
           >
             {rows.length}
           </span>
+
+          {tone === "overdue" && (
+            <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
+              <HiOutlineExclamation className="h-4 w-4" />
+              Past date — update the status
+            </span>
+          )}
         </div>
       </div>
 
@@ -393,24 +415,46 @@ export default function Interviews() {
           {upcomingInterviews.length > 0 &&
             renderInterviewTable(
               "Upcoming Interviews",
-              upcomingInterviews
+              upcomingInterviews,
+              "upcoming"
             )}
 
           {/* Divider */}
 
           {upcomingInterviews.length > 0 &&
-            completedInterviews.length > 0 && (
+            (overdueInterviews.length > 0 || completedInterviews.length > 0) && (
               <div className="px-3">
                 <div className="border-t border-slate-200" />
               </div>
             )}
+
+          {/* Overdue — still "Scheduled"/"Rescheduled" but the date has
+              already passed. Shown separately instead of being silently
+              folded into either Upcoming (wrong — it's not upcoming) or
+              Completed (wrong — its status was never actually updated). */}
+
+          {overdueInterviews.length > 0 &&
+            renderInterviewTable(
+              "Needs Update",
+              overdueInterviews,
+              "overdue"
+            )}
+
+          {/* Divider */}
+
+          {overdueInterviews.length > 0 && completedInterviews.length > 0 && (
+            <div className="px-3">
+              <div className="border-t border-slate-200" />
+            </div>
+          )}
 
           {/* Completed */}
 
           {completedInterviews.length > 0 &&
             renderInterviewTable(
               "Completed Interviews",
-              completedInterviews
+              completedInterviews,
+              "completed"
             )}
 
           {pagination && (
