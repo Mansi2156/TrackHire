@@ -140,12 +140,20 @@ function computeApplicationsKpi(applications, now) {
 }
 
 function computeInterviewsKpi(interviews, now) {
-  // "Scheduled" per the KPI card = still on the calendar — covers both
-  // `Scheduled` and `Rescheduled` (a rescheduled interview is still
-  // upcoming, just at a new time), matching how Upcoming Interviews and
-  // the interviewsThisWeek summary figure both treat these two statuses.
-  const scheduledNow = interviews.filter((iv) =>
-    ["Scheduled", "Rescheduled"].includes(iv.status)
+  // "Scheduled" per the KPI card must match what the user actually sees as
+  // "upcoming" elsewhere on the dashboard (the Upcoming Interviews widget,
+  // interviewsThisWeek). Previously this counted every interview whose
+  // *status* was Scheduled/Rescheduled regardless of date, so a Scheduled
+  // interview whose date had already passed (and simply hadn't been marked
+  // Completed/Passed/Failed yet) still inflated this number — e.g. showing
+  // "5 scheduled" when only 1 was genuinely still upcoming. Require the
+  // date to still be in the future so this card and "Upcoming Interviews"
+  // always agree.
+  const scheduledNow = interviews.filter(
+    (iv) =>
+      ["Scheduled", "Rescheduled"].includes(iv.status) &&
+      iv.interviewDate &&
+      iv.interviewDate >= now
   ).length;
 
   // Trend reflects scheduling *activity* (interviews added this week vs the
